@@ -5,7 +5,6 @@
 #include<iostream>
 #include<fstream>
 #include<vector>
-#include"debug.h"
 using namespace std;
 
 // Basic graph structure
@@ -84,8 +83,8 @@ int STP_reader(string file_name, Graph &G){
 	return 0;
 }
 
-int main(){
-	string s = "K100.1.stp";
-	Graph G;
-	dbg(STP_reader(s, G));
-}
+// int main(){
+// 	string s = "K100.1.stp";
+// 	Graph G;
+// 	dbg(STP_reader(s, G));
+// }
