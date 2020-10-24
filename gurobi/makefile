@@ -1,11 +1,12 @@
+# https://support.gurobi.com/hc/en-us/articles/360039093112
 # Gurobi MakeFile for C++
 # Based on Gurobi exemple
 
 PLATFORM = linux64
-INC      = /home/morete/ic/gurobi/include
+INC      = /home/morete/ic/gurobi903/include
 CPP      = g++ -std=c++17
 CARGS    = -m64 -g
-CPPLIB   = -L/home/morete/ic/gurobi/lib -lgurobi_c++ -lgurobi90
+CPPLIB   = -L/home/morete/ic/gurobi903/lib -lgurobi_c++ -lgurobi90
 GRBAPP   = DOTNETCore2
 
 %: %.cpp

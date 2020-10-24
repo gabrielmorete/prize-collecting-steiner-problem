@@ -1,10 +1,34 @@
 /*	Author : Gabriel Morete de Azevedo
 	Event Handler for the PCST
+
+	Formulation:
+	Given a network (G(V, E), c, p) with c = (c_e)_{e in E}, p = (p_v)_{v in V}
+	define x \in E and y, r \in V binary such that for a tree solution T
+		  / 1, if e \in E(T)	
+	x_e = |
+		  \ 0, otherwise
+
+		  / 1, if v \in V(T)	
+	y_v = |
+		  \ 0, otherwise
+
+		  / 1, if v is the root of T	
+	r_v = |
+		  \ 0, otherwise		  
+
+	Hence, we have the following problem
+
+		min cx + p(1 - y)
+		st
+		r*1 = 1 (only one root)
+		y_v >= r_v (root is in the tree)
+		x(\delta(W)) >= (1/|V|)y(W) -r(W), forwall W subset C
+		x, y, r \in {0, 1}
 */
 
 #include "gurobi_c++.h"
-#include "../stp_reader/stp_reader.cpp"
-#include "../stp_reader/debug.h"
+#include "../src/stp_reader.cpp"
+#include "../src/debug.h"
 #include <cassert>
 #include <cstdlib>
 #include <cmath>
@@ -18,28 +42,40 @@ void findsubtour(int n, double** sol, int* tourlenP, int* tour);
 // find the smallest subtour, and add a subtour elimination constraint
 // if the tour doesn't visit every node.
 
-int SUB_CNT;
-
-class subtourelim: public GRBCallback{
+class cut_tree: public GRBCallback{
 	public:
-		GRBVar** vars;
+		GBRVar* vary, varr;
+		GRBVar** varx;
 		int n;
-		subtourelim(GRBVar** xvars, int xn) {
-			vars = xvars;
-			n = xn;
+		cut_tree(GRBVar *_y, GRBVar *_r, GRBVar** _x, int _n) {
+			vary(_y), varr(_r), varx(_x), n(_n);
 		}
 	protected:
 		void callback() {
 			try {
 				if (where == GRB_CB_MIPSOL) {
 					// Found an integer feasible solution - does it visit every node?
-					double **x = new double*[n];
-					int *tour = new int[n];
-					int i, j, len;
-					for (i = 0; i < n; i++)
-						x[i] = getSolution(vars[i], n);
 
-					findsubtour(n, x, &len, tour);
+					double y[n], r[n];
+					double x[n + 1][n + 1];
+					int i, j, len;
+					for (int i = 1; i <= n; i++){
+						y[i] = getSolution(y[i]);
+						r[i] = getSolution(r[i]);
+					}
+
+					for (int i = 1; i <= n; i++)
+						x[i] = getSolution(x[i], n);
+
+					int root = 1, cnt = 0;
+					for (int v = 1; v <= n; v++)
+						if (r[v] > 0.5){
+							root = r[v];
+							cnt++;
+						}
+					assert(cnt != 1); // only one root	
+
+					find_min_cut(n, root, x, y);
 
 					if (len < n) {
 						SUB_CNT++;//Estamos utilizando uma constraint de subtour elimination
@@ -68,7 +104,6 @@ class subtourelim: public GRBCallback{
 // Given an integer-feasible solution 'sol', find the smallest
 // sub-tour.  Result is returned in 'tour', and length is
 // returned in 'tourlenP'.
-
 	
 void findsubtour(int n, double** sol, int* tourlenP, int* tour){
 		bool* seen = new bool[n];
@@ -116,65 +151,82 @@ void findsubtour(int n, double** sol, int* tourlenP, int* tour){
 	delete[] seen;
 }
 
-double adj[1100][1100];
-
 int main(){
-	int n, i, j;
+	Graph G;
 
-	cin >> n;
+	string file_name = "ljubic.stp";
 
-	for (i = 0; i < n; i++){
-		for (j = i; j < n; j++){
-			cin >> adj[i][j];
-			adj[j][i] = adj[i][j];
-		}
+
+	if (int _code = STP_reader(file_name, G) != 0){
+		cout<<"Error reading file - Code "<<_code<<endl;
+		return 0;
 	}
 
-	for (i = 0; i < n; i++)
-		adj[i][i] = 0;
+	int n = G.V, m = G.E;
+	double adj[n + 1][n + 1];
 
-	GRBEnv *env = NULL;
-	GRBVar **vars = NULL;
+	memset(adj, INF, sizeof adj);
 
-	vars = new GRBVar*[n];
-	for (i = 0; i < n; i++)
-		vars[i] = new GRBVar[n];
+	for (int v = 1; v <= n; v++)
+		for (auto u : G.adj[v])
+			adj[v][u.first] = u.second;
 
+	for (int i = 1; i <= G.V; i++)
+		for (pair<int, int> u : G.adj[i])
+			if (u.first > i)
+				cout<<u.first<<' '<<i<<endl;
+
+	GRBEnv env = GRBEnv();
+	GRBVar x[n + 1][n + 1];
+	GRBVar y[n + 1];
+	GRBVar r[n  + 1];
+
+	
 	try {
 
-		env = new GRBEnv();
-		GRBModel model = GRBModel(*env);
+		GRBModel model = GRBModel(env);
 
-		// Must set LazyConstraints parameter when using lazy constraints
+		// We will use an event Handler
 
 		model.set(GRB_IntParam_LazyConstraints, 1);
 
 		// Create binary decision variables
 
-		for (i = 0; i < n; i++) {
-			for (j = 0; j <= i; j++) {
-				vars[i][j] = model.addVar(0.0, 1.0, adj[i][j], GRB_BINARY, "x_"+itos(i)+"_"+itos(j));
+		for (int i = 1; i < n; i++) {
+			for (int j = 1; j <= i; j++) {
+				vars[i][j] = model.addVar(0.0, (adj[i][j] != INF)? 1.0 : 0.0, adj[i][j], GRB_BINARY, "x_"+itos(i)+"_"+itos(j));
 				vars[j][i] = vars[i][j];
 			}
 		}
 
-		// Degree-2 constraints
-
-		for (i = 0; i < n; i++) {
-			GRBLinExpr expr = 0;
-			for (j = 0; j < n; j++)
-				expr += vars[i][j];
-			model.addConstr(expr == 2, "deg2_"+itos(i));
+		GRBLinExpr expr = 0;
+		for (int v = 1; v <= n; v++){
+			y[v] = model.addVar(0.0, 1.0, -G.p[v], GRB_BINARY, "y_"+itos(v));
+			y[v] = model.addVar(0.0, 1.0, 0.0, GRB_BINARY, "r_"+itos(v));
 		}
 
-		// Forbid edge from node back to itself
+		int sum = 0;
+		for (int v = 1; v <= n; v++)
+			sum += G.p[v];
+		y[0] = model.addVar(1.0, 1.0, sum, GRB_BINARY, "sum_of_values")
 
-		for (i = 0; i < n; i++)
+		// Forbid edge from node back to itself
+		for (int i = 1; i < n; i++)
 			vars[i][i].set(GRB_DoubleAttr_UB, 0);
+
+		// Root is in the tree
+		for (int v = 1; v <= n; v++)
+			model.addConstr(y[v] >= r[v], "in_tree_root_"+itos(v));
+
+		// Only one root
+		expr = 0;
+		for (int v = 1; v <= n; v++)	
+			expr += r[v];
+		model.addConstr(expr == 1, "one_root");
 
 		// Set callback function
 
-		subtourelim cb = subtourelim(vars, n);
+		cut_tree cb = cut_tree(y, r, x, n);
 		model.setCallback(&cb);
 
 		// Optimize model
@@ -183,9 +235,9 @@ int main(){
 
 		// Extract solution
 
-		if (model.get(GRB_IntAttr_SolCount) > 0) {
+		if (model.get(GRB_IntAttr_SolCount) > 0) { //////////////////////////
 			double **sol = new double*[n];
-			for (i = 0; i < n; i++)
+			for (int i = 0; i < n; i++)
 				sol[i] = model.get(GRB_DoubleAttr_X, vars[i], n);
 
 			int* tour = new int[n];
@@ -195,11 +247,11 @@ int main(){
 			assert(len == n);
 
 			cout << "Tour: ";
-			for (i = 0; i < len; i++)
+			for (int i = 0; i < len; i++)
 				cout << tour[i] << " ";
 			cout << endl;
 			cout << "SUB_ELIM:"<<SUB_CNT<<endl;
-			for (i = 0; i < n; i++)
+			for (int i = 0; i < n; i++)
 				delete[] sol[i];
 			delete[] sol;
 			delete[] tour;
@@ -212,7 +264,7 @@ int main(){
 		cout << "Error during optimization" << endl;
 	}
 
-	for (i = 0; i < n; i++)
+	for (int i = 0; i < n; i++)
 	delete[] vars[i];
 	delete[] vars;
 	delete env;
