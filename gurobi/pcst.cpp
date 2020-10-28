@@ -27,6 +27,7 @@
 */
 
 #include "gurobi_c++.h"
+#include "min_cut.cpp"
 #include "../src/stp_reader.cpp"
 #include "../src/debug.h"
 #include <cassert>
@@ -44,11 +45,11 @@ void findsubtour(int n, double** sol, int* tourlenP, int* tour);
 
 class cut_tree: public GRBCallback{
 	public:
-		GBRVar* vary, varr;
+		GRBVar* vary, varr;
 		GRBVar** varx;
 		int n;
 		cut_tree(GRBVar *_y, GRBVar *_r, GRBVar** _x, int _n) {
-			vary(_y), varr(_r), varx(_x), n(_n);
+			vary =_y; varr = _r; varx = _x;  n = _n;
 		}
 	protected:
 		void callback() {
@@ -73,24 +74,25 @@ class cut_tree: public GRBCallback{
 							root = r[v];
 							cnt++;
 						}
+
 					assert(cnt != 1); // only one root	
 
-					find_min_cut(n, root, x, y);
-
-					if (len < n) {
-						SUB_CNT++;//Estamos utilizando uma constraint de subtour elimination
-						// Add subtour elimination constraint
+					if(find_min_cut(n, root, x, y)){
 						GRBLinExpr expr = 0;
-						for (i = 0; i < len; i++)
-							for (j = i+1; j < len; j++)
-								expr += vars[tour[i]][tour[j]];
-						addLazy(expr <= len-1);
+						for (int v = 1; v <= n; v++)
+							for (int u = v + 1; u <= n; u++)
+								if (rterm[v] != 0 and rterm[u] != 0 and gmhu::cuts[term[u]] != gmhu::cuts[term[v]])
+									expr += x[v][u];
+						for (int v = 1; v <= n; v++)		
+							if (rterm[v] != 0 and gmhu::cuts[term[v]])
+								expr += r[v];
+						addLazy(expr >= 1);
 					}
 
-					for (i = 0; i < n; i++)
-						delete[] x[i];
-					delete[] x;
-					delete[] tour;
+					// for (i = 0; i < n; i++)
+					// 	delete[] x[i];
+					// delete[] x;
+					// delete[] tour;
 					}
 				} catch (GRBException e) {
 					cout << "Error number: " << e.getErrorCode() << endl;
@@ -208,7 +210,7 @@ int main(){
 		int sum = 0;
 		for (int v = 1; v <= n; v++)
 			sum += G.p[v];
-		y[0] = model.addVar(1.0, 1.0, sum, GRB_BINARY, "sum_of_values")
+		y[0] = model.addVar(1.0, 1.0, sum, GRB_BINARY, "sum_of_values");
 
 		// Forbid edge from node back to itself
 		for (int i = 1; i < n; i++)
@@ -236,25 +238,12 @@ int main(){
 		// Extract solution
 
 		if (model.get(GRB_IntAttr_SolCount) > 0) { //////////////////////////
-			double **sol = new double*[n];
-			for (int i = 0; i < n; i++)
-				sol[i] = model.get(GRB_DoubleAttr_X, vars[i], n);
+			double *sol = model.get(GRB_DoubleAttr_X, y, n);
 
-			int* tour = new int[n];
-			int len;
-
-			findsubtour(n, sol, &len, tour);
-			assert(len == n);
-
-			cout << "Tour: ";
-			for (int i = 0; i < len; i++)
-				cout << tour[i] << " ";
+			cout << "Tree: ";
+			for (int i = 1; i <= n; i++)
+				cout << sol[i] << " ";
 			cout << endl;
-			cout << "SUB_ELIM:"<<SUB_CNT<<endl;
-			for (int i = 0; i < n; i++)
-				delete[] sol[i];
-			delete[] sol;
-			delete[] tour;
 		}
 
 	} catch (GRBException e) {
@@ -264,9 +253,5 @@ int main(){
 		cout << "Error during optimization" << endl;
 	}
 
-	for (int i = 0; i < n; i++)
-	delete[] vars[i];
-	delete[] vars;
-	delete env;
 	return 0;
 }
