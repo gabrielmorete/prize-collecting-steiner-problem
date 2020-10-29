@@ -1,36 +1,21 @@
 /* Author : Gabriel Morete de Azevedo
 
-   Event Handler for the PCST problem, Gutsfield
-   algorithm for equivalent flow tree and Dinitz
-   algorithm for maxflow.
+   Gutsfield algorithm for equivalent flow tree 
+   and Dinitz algorithm for maxflow.
 */
 
 #include<vector>
 #include<cstring>
 #include<iostream>
 #include<cassert>
-//#include "../src/stp_reader.cpp"
-//#include "../src/debug.h"
-
-
-
-#define gnl cout << endl
-#define chapa cout << "oi meu chapa" << endl
-
-#define dbg(x)  cout << #x << " = " << x << endl
-#define all(x)  x.begin(),x.end()
-
-#define fr(i,n)     for (int i = 0; i < n; i++)
-#define frr(i,n)    for (int i = 1; i <= n; i++)
-
-const int INF = 0x3f3f3f3f;
+#include "../src/stp_reader.cpp"
+#include "../src/debug.h"
 
 // const int INF = 0x3f3f3f3f;
 
 const int MAXN = 6e3;
 const int MAXM = 2e4;
 using namespace std;
-
 
 const long double EPS = 1e-8;
 
@@ -149,151 +134,141 @@ namespace gmhu{
 					mflow[s][v] = mflow[v][s] = min(mflow[s][t], mflow[t][v]);
 		}
 	}
-}
 
-vector<int> term, rterm;
 
-bool find_min_cut(int n, int r, vector<vector<double>> adj, double *y){
-	gmhu::init();
-	rterm.resize(n + 1, 0);
-	
-	for (int v = 1; v <= n; v++)
-		if (y[v] > 0.5){
-			dbg(v);
-			term.push_back(v);
-			rterm[v] = term.size() - 1;
-		}
+	int term[MAXN], rterm[MAXN]; // terminal and reverse permutation
 
-	for (int v = 1; v <= term.size(); v++)
-		for (int u = 1; u <= term.size(); u++)
-			if (u != v)
-				gmhu::add(v, u, adj[term[u]][term[v]]);
-	
-	gmhu::gomory_hu();
+	bool find_min_cut(int _n, int _r, vector<vector<double>> adj, double *y){
+		init();
+		
+		int nterm = 0; // number of terminals, indexed by 1
+		n = _n;	
+		
+		// frr(v, n)
+		// 	dbg(y[v]);
 
-	// now we want the global minimun cut
-
-	int vtx1 = 0, vtx2 = 0;
-	double minc = INF;
-	for (int v = 1; v <= term.size(); v++)
-		for (int u = 1; u <= term.size(); u++)
-			if (sign(gmhu::mflow[v][u] - minc) < 0){
-				minc = gmhu::mflow[v][u];
-				vtx1 = v;
-				vtx2 = u; 
+		for (int v = 1; v <= n; v++)
+			if (y[v] > 0.5){
+				//dbg(v);
+				term[++nterm] = v;
+				rterm[v] = nterm;
 			}
 
-	if (vtx1 == 0){
-		cout<<"Erro: no vertex was found"<<endl;
-		assert(0);	
+
+		for (int v = 1; v <= nterm; v++) // indexed by terminals
+			for (int u = 1; u <= nterm; u++)
+				if (u != v and sign(adj[term[u]][term[v]]) > 0){
+	//				cout<<term[v]<<' '<<term[u]<<' '<<adj[term[v]][term[u]]<<endl;
+					add(v, u, adj[term[v]][term[u]]);
+				}
+//		chapa;
+		gomory_hu();
+
+		// frr(v, nterm){
+		// 	frr(u, nterm)
+		// 		cout<<mflow[v][u]<<' ';
+		// 	chapa;	
+		// 	gnl;	
+		// }
+
+
+		// for (int v = 1; v <= nterm; v++){
+		// 	cout<<term[v]<<' '<<v<<' '<<gmhu::pai[v]<<' '<<gmhu::fpai[v]<<endl;
+		// }
+
+
+
+		// now we want the global minimun cut
+
+		int vtx1 = 0, vtx2 = 0;
+		double minc = INF;
+		for (int v = 1; v <= nterm; v++)
+			for (int u = 1; u <= nterm; u++)
+				if (u != v  and sign(mflow[v][u] - minc) < 0){
+					minc = mflow[v][u];
+					vtx1 = v;
+					vtx2 = u; 
+				}
+
+
+		//cout<<"mincut : "<<vtx1<<' '<<vtx2<<' '<<mflow[vtx1][vtx2]<<endl;		
+
+		if (vtx1 == 0){
+			cout<<"Erro: no vertex was found"<<endl;
+			return true;
+		}
+
+		// if (sign(minc - 1) >= 0)
+		// 	return false; // found optimal solution
+
+		dbg(min_cut(vtx1, vtx2));
+
+		// cout<<"cuts : ";
+		// for (int v = 1; v <= nterm; v++)
+		// 	if (cuts[v] == 1)
+		// 		cout<<term[v]<<' ';
+		// gnl;	
+
 		return true;
 	}
-
-	if (sign(minc - 1) >= 0)
-		return false; // found optimal solution
-
-	gmhu::dinic(vtx1, vtx2);
-	return true;
 }
 
-//int n, m, adj[MAXN][MAXN];
 
-// void test_gomhu(){
+int main(){
 
+	Graph G;
 
-// 	// frr(v, n){
-// 	// 	frr(u, n)
-// 	// 		cout<<adj[v][u]<<' ';
-// 	// 	gnl;	
-// 	// }
+	string file_name = "ljubic.stp";
+	if (int _code = STP_reader(file_name, G) != 0){
+		cout<<"Error reading file - Code "<<_code<<endl;
+		return 0;
+	}
 
-// 	gmhu::n = n;
-// 	gmhu::m = m;
+	int n = G.V, m = G.E;
+	vector<vector<double> > adj(n + 1, vector<double>(n + 1));
 
-// 	for (int v = 1; v <= n; v++)
-// 		for (int u = 1; u <= n; u++)
-// 			if (adj[v][u] != 0){
-// 				gmhu::add(v, u, adj[v][u]);
-// 			}
+	for (int v = 1; v <= n; v++)
+		for (int u = 1; u <= n; u++)
+			adj[v][u] = (u == v ? 0 : -1);
+
+	for (int v = 1; v <= n; v++)
+		for (auto u : G.adj[v])
+			adj[v][u.first] = u.second;
+
+	// frr(v, n){
+	// 	frr(u, n)
+	// 		cout<<adj[v][u]<<' ';
+	// 	gnl;	
+	// }
+
+	double y[n + 1];
+
+	fr(i, n + 1)
+		y[i] = 1;
+	y[1] = 0;	
+
+	cout<<(gmhu::find_min_cut(n, 0, adj, y))<<endl;	
+}
+
+// int main(){
+// 	gmhu::init();
+// 	cin>>gmhu::n>>gmhu::m;
+
+// 	int x, y, z;
+
+// 	fr(i, gmhu::m){
+// 		cin>>x>>y;//>>z;
+// 		gmhu::add(x, y, 1);
+// 		gmhu::add(y, x, 1);
+// 	}
 
 // 	gmhu::gomory_hu();		
 
 // 	int ans = 0;
 
-// 	for (int i = 1; i <= n; i++)
+// 	for (int i = 1; i <= gmhu::n; i++)
 // 		for (int j = 1; j < i; j++)
 // 			ans += gmhu::mflow[j][i];
 // 	cout<<ans<<endl;	
-
 // }
 
-
-int main(){
-	gmhu::init();
-	cin>>gmhu::n>>gmhu::m;
-
-	int x, y, z;
-
-	fr(i, gmhu::m){
-		cin>>x>>y;//>>z;
-		gmhu::add(x, y, 1);
-		gmhu::add(y, x, 1);
-		// adj[x][y] = 1;
-		// adj[y][x] = 1;
-	}
-
-	// frr(i, n)
-	// 	adj[i][i] = 0;
-
-		gmhu::gomory_hu();		
-
-	int ans = 0;
-
-	for (int i = 1; i <= gmhu::n; i++)
-		for (int j = 1; j < i; j++)
-			ans += gmhu::mflow[j][i];
-	cout<<ans<<endl;	
-
-	// double yy[n + 1];
-
-	// fr(i, n + 1)
-	// 	yy[i] = 1;
-
-//	cout<<(find_min_cut(n, 0, adj, yy))<<endl;	
-}
-
-
-// int main(){
-// 	Graph G;
-
-// 	string file_name = "ljubic.stp";
-// 	if (int _code = STP_reader(file_name, G) != 0){
-// 		cout<<"Error reading file - Code "<<_code<<endl;
-// 		return 0;
-// 	}
-
-// 	int n = G.V, m = G.E;
-// 	vector<vector<double> > adj(n + 1, vector<double>(n, INF));
-
-// 	for (int v = 1; v <= n; v++)
-// 		for (auto u : G.adj[v])
-// 			adj[v][u.first] = u.second;
-// 	for (int v = 1; v <= n; v++)
-// 		adj[v][v] = 0;
-
-// 	frr(v, n){
-// 		frr(u, n)
-// 			cout<<adj[v][u]<<' ';
-// 		gnl;	
-// 	}
-
-
-
-// 	double y[n + 1];
-
-// 	fr(i, n + 1)
-// 		y[i] = 1;
-
-// 	cout<<(find_min_cut(n, 0, adj, y))<<endl;	
-
-// }
