@@ -8,8 +8,8 @@
 #include<cstring>
 #include<iostream>
 #include<cassert>
-#include "../src/stp_reader.cpp"
-#include "../src/debug.h"
+// #include "../src/stp_reader.cpp"
+// #include "../src/debug.h"
 
 // const int INF = 0x3f3f3f3f;
 
@@ -136,12 +136,12 @@ namespace gmhu{
 	}
 
 
-	int term[MAXN], rterm[MAXN]; // terminal and reverse permutation
+	int nterm, term[MAXN], rterm[MAXN]; // terminal and reverse permutation
 
-	bool find_min_cut(int _n, int _r, vector<vector<double>> adj, double *y){
+	bool find_min_cut(int _n, double **adj, double *y){
 		init();
 		
-		int nterm = 0; // number of terminals, indexed by 1
+		nterm = 0; // number of terminals, indexed by 1
 		n = _n;	
 		
 		// frr(v, n)
@@ -198,10 +198,10 @@ namespace gmhu{
 			return true;
 		}
 
-		// if (sign(minc - 1) >= 0)
-		// 	return false; // found optimal solution
+		if (sign(minc - 1) >= 0)
+			return false; // found optimal solution
 
-		dbg(min_cut(vtx1, vtx2));
+		min_cut(vtx1, vtx2);
 
 		// cout<<"cuts : ";
 		// for (int v = 1; v <= nterm; v++)
@@ -214,41 +214,41 @@ namespace gmhu{
 }
 
 
-int main(){
+// int main(){
 
-	Graph G;
+// 	Graph G;
 
-	string file_name = "ljubic.stp";
-	if (int _code = STP_reader(file_name, G) != 0){
-		cout<<"Error reading file - Code "<<_code<<endl;
-		return 0;
-	}
+// 	string file_name = "ljubic.stp";
+// 	if (int _code = STP_reader(file_name, G) != 0){
+// 		cout<<"Error reading file - Code "<<_code<<endl;
+// 		return 0;
+// 	}
 
-	int n = G.V, m = G.E;
-	vector<vector<double> > adj(n + 1, vector<double>(n + 1));
+// 	int n = G.V, m = G.E;
+// 	vector<vector<double> > adj(n + 1, vector<double>(n + 1));
 
-	for (int v = 1; v <= n; v++)
-		for (int u = 1; u <= n; u++)
-			adj[v][u] = (u == v ? 0 : -1);
+// 	for (int v = 1; v <= n; v++)
+// 		for (int u = 1; u <= n; u++)
+// 			adj[v][u] = (u == v ? 0 : -1);
 
-	for (int v = 1; v <= n; v++)
-		for (auto u : G.adj[v])
-			adj[v][u.first] = u.second;
+// 	for (int v = 1; v <= n; v++)
+// 		for (auto u : G.adj[v])
+// 			adj[v][u.first] = u.second;
 
-	// frr(v, n){
-	// 	frr(u, n)
-	// 		cout<<adj[v][u]<<' ';
-	// 	gnl;	
-	// }
+// 	// frr(v, n){
+// 	// 	frr(u, n)
+// 	// 		cout<<adj[v][u]<<' ';
+// 	// 	gnl;	
+// 	// }
 
-	double y[n + 1];
+// 	double y[n + 1];
 
-	fr(i, n + 1)
-		y[i] = 1;
-	y[1] = 0;	
+// 	fr(i, n + 1)
+// 		y[i] = 1;
+// 	y[1] = 0;	
 
-	cout<<(gmhu::find_min_cut(n, 0, adj, y))<<endl;	
-}
+// 	cout<<(gmhu::find_min_cut(n, 0, adj, y))<<endl;	
+// }
 
 // int main(){
 // 	gmhu::init();

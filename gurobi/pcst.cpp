@@ -27,9 +27,9 @@
 */
 
 #include "gurobi_c++.h"
-#include "min_cut.cpp"
 #include "../src/stp_reader.cpp"
 #include "../src/debug.h"
+#include "min_cut.cpp"
 #include <cassert>
 #include <cstdlib>
 #include <cmath>
@@ -37,7 +37,6 @@
 using namespace std;
 
 string itos(int i) {stringstream s; s << i; return s.str(); }
-void findsubtour(int n, double** sol, int* tourlenP, int* tour);
 
 // Subtour elimination callback.  Whenever a feasible solution is found,
 // find the smallest subtour, and add a subtour elimination constraint
@@ -45,10 +44,11 @@ void findsubtour(int n, double** sol, int* tourlenP, int* tour);
 
 class cut_tree: public GRBCallback{
 	public:
-		GRBVar* vary, varr;
+		GRBVar* vary; 
+		GRBVar* varr;
 		GRBVar** varx;
 		int n;
-		cut_tree(GRBVar *_y, GRBVar *_r, GRBVar** _x, int _n) {
+		cut_tree(GRBVar* _y, GRBVar* _r, GRBVar** _x, int _n) {
 			vary =_y; varr = _r; varx = _x;  n = _n;
 		}
 	protected:
@@ -57,43 +57,59 @@ class cut_tree: public GRBCallback{
 				if (where == GRB_CB_MIPSOL) {
 					// Found an integer feasible solution - does it visit every node?
 
-					double y[n], r[n];
-					double x[n + 1][n + 1];
-					int i, j, len;
+					double y[n + 1], r[n + 1];
+					double *x[n + 1];
+					
 					for (int i = 1; i <= n; i++){
-						y[i] = getSolution(y[i]);
-						r[i] = getSolution(r[i]);
+						y[i] = getSolution(vary[i]);
+						r[i] = getSolution(varr[i]);
 					}
 
 					for (int i = 1; i <= n; i++)
-						x[i] = getSolution(x[i], n);
+						x[i] = getSolution(varx[i], n + 1);
 
 					int root = 1, cnt = 0;
-					for (int v = 1; v <= n; v++)
-						if (r[v] > 0.5){
+					for (int v = 2; v <= n; v++)
+						if (r[v] > r[root])
 							root = r[v];
-							cnt++;
-						}
 
-					assert(cnt != 1); // only one root	
+					for (int v = 1; v <= n; v++)
+						cout<<y[v]<<' '<<r[v]<<endl;	
 
-					if(find_min_cut(n, root, x, y)){
-						GRBLinExpr expr = 0;
+					for (int v = 0; v <= n; v++){
+						for (int u = 0; u <= n; u++)
+							cout<<x[u][v]<<' ';
+						gnl;
+					}
+
+
+
+				
+					if (gmhu::find_min_cut(n, x, y)){
+						GRBLinExpr lhs = 0, rhs = 0;
+						
+						bool ok = !(gmhu::cuts[gmhu::rterm[root]]); // other side of the cut
+
+						for (int v = 1; v <= gmhu::nterm; v++)
+							for (int u = v + 1; u <= gmhu::nterm; u++)
+								if (gmhu::cuts[v] != gmhu::cuts[u])
+									lhs += varx[gmhu::term[v]][gmhu::term[u]]; // the cut
+
+						double divi = 0;		
+						for (int v = 1; v <= gmhu::nterm; v++)
+							if (gmhu::cuts[v] == ok){ // side with no root
+								divi += 1;	
+							}	
+
+						for (int v = 1; v <= gmhu::nterm; v++)
+							if (gmhu::cuts[v] == ok){ // side with no root
+								rhs += (vary[gmhu::term[v]]) / divi;
+						}	
 						for (int v = 1; v <= n; v++)
-							for (int u = v + 1; u <= n; u++)
-								if (rterm[v] != 0 and rterm[u] != 0 and gmhu::cuts[term[u]] != gmhu::cuts[term[v]])
-									expr += x[v][u];
-						for (int v = 1; v <= n; v++)		
-							if (rterm[v] != 0 and gmhu::cuts[term[v]])
-								expr += r[v];
-						addLazy(expr >= 1);
+							rhs -= r[v];
+						addLazy(lhs >= rhs);
 					}
-
-					// for (i = 0; i < n; i++)
-					// 	delete[] x[i];
-					// delete[] x;
-					// delete[] tour;
-					}
+				}
 				} catch (GRBException e) {
 					cout << "Error number: " << e.getErrorCode() << endl;
 					cout << e.getMessage() << endl;
@@ -103,63 +119,14 @@ class cut_tree: public GRBCallback{
 		}
 };
 
-// Given an integer-feasible solution 'sol', find the smallest
-// sub-tour.  Result is returned in 'tour', and length is
-// returned in 'tourlenP'.
-	
-void findsubtour(int n, double** sol, int* tourlenP, int* tour){
-		bool* seen = new bool[n];
-		int bestind, bestlen;
-		int i, node, len, start;
-
-		for (i = 0; i < n; i++)
-			seen[i] = false;
-
-		start = 0;
-		bestlen = n+1;
-		bestind = -1;
-		node = 0;
-		while (start < n) {
-			for (node = 0; node < n; node++)
-				if (!seen[node])
-					break;
-			if (node == n)
-				break;
-			for (len = 0; len < n; len++) {
-				tour[start+len] = node;
-				seen[node] = true;
-				for (i = 0; i < n; i++) {
-					if (sol[node][i] > 0.5 && !seen[i]) {
-						node = i;
-						break;
-					}
-				}
-				if (i == n) {
-					len++;
-					if (len < bestlen) {
-						bestlen = len;
-						bestind = start;
-					}
-					start += len;
-					break;
-				}
-			}
-		}
-
-	for (i = 0; i < bestlen; i++)
-		tour[i] = tour[bestind+i];
-	*tourlenP = bestlen;
-
-	delete[] seen;
-}
-
 int main(){
-	Graph G;
+	Graph G; // type graph from stp reader
 
 	string file_name = "ljubic.stp";
 
+	int _code = STP_reader(file_name, G);
 
-	if (int _code = STP_reader(file_name, G) != 0){
+	if (_code != 0){
 		cout<<"Error reading file - Code "<<_code<<endl;
 		return 0;
 	}
@@ -167,23 +134,31 @@ int main(){
 	int n = G.V, m = G.E;
 	double adj[n + 1][n + 1];
 
-	memset(adj, INF, sizeof adj);
+	for (int v = 0; v <= n; v++)
+		for (int u = 0; u <= n; u++)
+			adj[v][u] = INF;
 
 	for (int v = 1; v <= n; v++)
 		for (auto u : G.adj[v])
 			adj[v][u.first] = u.second;
 
-	for (int i = 1; i <= G.V; i++)
-		for (pair<int, int> u : G.adj[i])
-			if (u.first > i)
-				cout<<u.first<<' '<<i<<endl;
+	// for (int i = 1; i <= G.V; i++)
+	// 	for (pair<int, int> u : G.adj[i])
+	// 		if (u.first > i)
+	// 			cout<<u.first<<' '<<i<<endl;
 
 	GRBEnv env = GRBEnv();
-	GRBVar x[n + 1][n + 1];
-	GRBVar y[n + 1];
-	GRBVar r[n  + 1];
+	GRBVar **x = new GRBVar*[n + 1];
+	for (int i = 0; i <= n; i++)
+		x[i] = new GRBVar[n + 1];
 
-	
+	// 	vars = new GRBVar*[n];
+	// for (i = 0; i < n; i++)
+	// 	vars[i] = new GRBVar[n];
+
+	GRBVar *y = new GRBVar[n + 1];
+	GRBVar *r = new GRBVar[n + 1];
+
 	try {
 
 		GRBModel model = GRBModel(env);
@@ -194,27 +169,37 @@ int main(){
 
 		// Create binary decision variables
 
-		for (int i = 1; i < n; i++) {
-			for (int j = 1; j <= i; j++) {
-				vars[i][j] = model.addVar(0.0, (adj[i][j] != INF)? 1.0 : 0.0, adj[i][j], GRB_BINARY, "x_"+itos(i)+"_"+itos(j));
-				vars[j][i] = vars[i][j];
+		for (int i = 0; i <= n; i++) {
+			for (int j = 0; j <= i; j++) {
+				x[i][j] = model.addVar(0.0, 1.0, adj[i][j], GRB_BINARY, "x_"+itos(i)+"_"+itos(j));
+				x[j][i] = x[i][j];
 			}
 		}
 
 		GRBLinExpr expr = 0;
-		for (int v = 1; v <= n; v++){
+		for (int v = 0; v <= n; v++){
 			y[v] = model.addVar(0.0, 1.0, -G.p[v], GRB_BINARY, "y_"+itos(v));
-			y[v] = model.addVar(0.0, 1.0, 0.0, GRB_BINARY, "r_"+itos(v));
+			r[v] = model.addVar(0.0, 1.0, 0.0, GRB_BINARY, "r_"+itos(v));
 		}
 
 		int sum = 0;
 		for (int v = 1; v <= n; v++)
 			sum += G.p[v];
 		y[0] = model.addVar(1.0, 1.0, sum, GRB_BINARY, "sum_of_values");
+		r[0].set(GRB_DoubleAttr_UB, 0);
 
 		// Forbid edge from node back to itself
-		for (int i = 1; i < n; i++)
-			vars[i][i].set(GRB_DoubleAttr_UB, 0);
+		for (int i = 0; i <= n; i++){
+			x[i][i].set(GRB_DoubleAttr_UB, 0);
+			x[i][0].set(GRB_DoubleAttr_UB, 0);
+		}
+
+		for (int v = 1; v <= n; v++){
+			expr = 0;
+			for (auto u : G.adj[v])
+				expr += x[v][u.first];
+			model.addConstr(expr >= y[v], "in_tree_terminal"+itos(v));
+		}
 
 		// Root is in the tree
 		for (int v = 1; v <= n; v++)
@@ -238,12 +223,24 @@ int main(){
 		// Extract solution
 
 		if (model.get(GRB_IntAttr_SolCount) > 0) { //////////////////////////
-			double *sol = model.get(GRB_DoubleAttr_X, y, n);
+			double *sol = model.get(GRB_DoubleAttr_X, y, n + 1);
+			
+			double **edge = new double*[n + 1];
+			for (int v = 1; v <= n; v++)
+				edge[v] = model.get(GRB_DoubleAttr_X, x[v], n + 1);
 
 			cout << "Tree: ";
 			for (int i = 1; i <= n; i++)
 				cout << sol[i] << " ";
 			cout << endl;
+			
+			for (int v = 1; v <= n; v++)
+				for (int u = 1; u < v; u++){
+					if (edge[u][v] > 0)
+						cout<<u<<' '<<v<<' '<<edge[u][v]<<endl;
+				}
+
+			delete[] edge;			
 		}
 
 	} catch (GRBException e) {
@@ -253,5 +250,10 @@ int main(){
 		cout << "Error during optimization" << endl;
 	}
 
+	for (int i = 0; i <= n; i++)
+		delete[] x[i];
+	delete[] x;
+	delete[] y;
+	delete[] r;
 	return 0;
 }
