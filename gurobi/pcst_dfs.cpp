@@ -24,6 +24,10 @@
 		y_v >= r_v (root is in the tree)
 		x(\delta(W)) >= (1/|V|)y(W) -r(W), forwall W subset C
 		x, y, r \in {0, 1}
+
+	Here we will try to use a simpler event handler (a dfs from the root) to
+	find infeaseble cuts.
+
 */
 
 #include "gurobi_c++.h"
@@ -41,6 +45,20 @@ string itos(int i) {stringstream s; s << i; return s.str(); }
 // Subtour elimination callback.  Whenever a feasible solution is found,
 // find the smallest subtour, and add a subtour elimination constraint
 // if the tour doesn't visit every node.
+
+typedef vector< vector<double> > matrix;	
+
+// returns the # of visited nodes
+int dfs(int v, int n, int *vis, double *y, matrix adj){
+	vis[v] = 1;
+
+	int tree = 1;
+	for (int u = 1; u <= n; u++)
+		if (y[u] > 0.5 and adj[v][u] > 0.5 and !vis[u])
+			tree += dfs(u, n, vis, y, adj);
+
+	return tree;	
+}
 
 int callbackcnt;
 
@@ -77,83 +95,75 @@ class cut_tree: public GRBCallback{
 						if (r[v] > r[root])
 							root = v;
 
-					cout<<"Callback "<<callbackcnt++<<endl;	
-					cout<<"vtx : ";
+					int tree_nodes;	
+
+					// cout<<"Callback "<<callbackcnt++<<endl;	
+					// cout<<"vtx : ";
 					for (int v = 1; v <= n; v++)
-						if (y[v] > 0.5)
-							cout<<v<<' ';
-					gnl;
-					cout<<"root : "<<root<<endl;			
+						if (y[v] > 0.5){
+//							cout<<v<<' ';
+							tree_nodes++;
+						}
+					// gnl;
+					// cout<<"root : "<<root<<endl;			
 
 					int e = 0;
 					for (int v = 1; v <= n; v++){
 						for (int u = 1; u < v; u++)
 							if (x[u][v] > 0){
-								cout<<u<<' '<<v<<' '<<x[u][v]<<endl;
+//								cout<<u<<' '<<v<<' '<<x[u][v]<<endl;
 								e++;
 							}
 					}
 
-					cout<<"#edges : "<<e<<endl;
+					// cout<<"#edges : "<<e<<endl;
 
-					if (gmhu::find_min_cut(n, x, y)){
-						cout<<"Adicionado corte"<<endl;
+
+					int vis[n + 1];
+					memset(vis, 0, sizeof vis);
+
+					if (dfs(root, n, vis, y, x) != tree_nodes){
+			//			cout<<"Adicionado corte"<<endl;
 						
 						GRBLinExpr lhs = 0, rhs = 0;
 						
-						bool ok = !(gmhu::cuts[gmhu::rterm[root]]); // other side of the cut
-
-						cout<<"Cut : ";		
+			//			cout<<"Cut : ";		
 						double cut_size = 0;		
-						for (int v = 1; v <= gmhu::nterm; v++)
-							if (gmhu::cuts[v] == ok){ // side with no root
-								cout<<gmhu::term[v]<<' ';
-								rhs += vary[gmhu::term[v] - 1];
-								cut_size++;	
+						for (int v = 1; v <= n; v++)
+							if (vis[v] == 0){
+			//					cout<<v<<' ';
+								rhs += vary[v - 1];
+								cut_size++;
 							}
-						cout<<"("<<cut_size<<")"<<endl;
+							
+				//		cout<<"("<<cut_size<<")"<<endl;
 
 
-						for (int v = 1; v <= gmhu::nterm; v++)
-							if (gmhu::cuts[v] == ok){
-								cout<<v<<' '<<r[v]<<endl;
+						for (int v = 1; v <= n; v++)
+							if (vis[v] == 0){
+				//				cout<<v<<' '<<r[v]<<endl;
 								if (r[v] > 0.5){
 									cout<<"Raiz no corte!"<<endl;
 									assert(0);
 								}
 
-								rhs -= cut_size * varr[gmhu::term[v] - 1];
+								rhs -= cut_size * varr[v - 1];
 							}
 
-
 						lhs = 0;
-						cout<<"begin edges"<<endl;
-						for (int v = 1; v <= gmhu::nterm; v++)
-							dbg(gmhu::cuts[v]);
-
+				//		cout<<"begin edges"<<endl;
+					
 						for (int v = 1; v <= n; v++){
-							if (gmhu::rterm[v] != 0 and gmhu::cuts[gmhu::rterm[v]] == ok){ // sou terminal no corte
+							if (vis[v] == 0){ // sou terminal no corte
 								for (int u = 1; u <= n; u++){
-									dbg(gmhu::rterm[u]);
-									if (gmhu::rterm[u] == 0){
+									if (vis[u] == 1){
 										lhs += cut_size * varx[v - 1][u - 1];
-										cout<<v<<' '<<u<<endl;
-									}
-									else if (gmhu::cuts[gmhu::rterm[u]] != ok){
-										lhs += cut_size * varx[v - 1][u - 1];
-										cout<<v<<' '<<u<<endl;
+				//						cout<<v<<' '<<u<<endl;
 									}
 								}
 							}	
 						}
-						cout<<"end edges"<<endl;
-
-						// for (int v = 1; v <= gmhu::nterm; v++)
-						// 	for (int u = v + 1; u <= gmhu::nterm; u++)
-						// 		if (gmhu::cuts[v] != gmhu::cuts[u]){
-						// 			cout<<gmhu::term[v]<<' '<<gmhu::term[u]<<endl;
-						// 			lhs += cut_size * varx[gmhu::term[v] - 1][gmhu::term[u] - 1]; // the cut
-						// 		}
+				//		cout<<"end edges"<<endl;
 
 						addLazy(lhs >= rhs);
 					}
@@ -170,7 +180,9 @@ class cut_tree: public GRBCallback{
 int main(){
 	Graph G; // type graph from stp reader
 
-	string file_name = "ljubic.stp";
+	//string file_name = "ljubic3.stp";
+	string file_name = "B/b03.stp";
+
 
 	int _code = STP_reader(file_name, G);
 
@@ -217,6 +229,7 @@ int main(){
 		// We will use an event Handler
 
 		model.set(GRB_IntParam_LazyConstraints, 1);
+		model.set(GRB_DoubleParam_TimeLimit, 1000.0);
 
 		// Create binary decision variables
 
@@ -267,7 +280,6 @@ int main(){
 
 		model.setObjective(expr, GRB_MINIMIZE);	
 
-
 		// Set callback function
 
 		cut_tree cb = cut_tree(y, r, x, n);
@@ -288,13 +300,13 @@ int main(){
 
 			cout << "Tree: ";
 			for (int i = 0; i < n; i++)
-				cout << sol[i] << " ";
+				cout << (sol[i] < 0.5 ? 0 : 1) << " ";
 			cout << endl;
 			
 			for (int v = 0; v < n; v++){
 				for (int u = 0; u < v; u++){
-					 if (edge[u][v] > 0)
-						cout<<u + 1<<' '<<v + 1<<' '<<edge[u][v]<<endl;
+					 if (edge[u][v] > 0.5)
+						cout<<u + 1<<' '<<v + 1<<' '<<adj[u][v]<<endl;
 				}
 			}	
 
@@ -311,11 +323,11 @@ int main(){
 		cout << "Error during optimization" << endl;
 	}
 
-	fr(i, n){
-		fr(j, n)
-			cout<<adj[i][j]<<' ';
-		gnl;		
-	}
+	// fr(i, n){
+	// 	fr(j, n)
+	// 		cout<<adj[i][j]<<' ';
+	// 	gnl;		
+	// }
 
 
 	for (int i = 0; i < n; i++)

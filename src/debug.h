@@ -1,3 +1,6 @@
+#ifndef DEBUG
+#define DEBUG
+
 #define gnl cout << endl
 #define chapa cout << "oi meu chapa" << endl
 
@@ -8,3 +11,5 @@
 #define frr(i,n)    for (int i = 1; i <= n; i++)
 
 const int INF = 0x3f3f3f3f;
+
+#endif 

@@ -5,15 +5,11 @@
 #include<iostream>
 #include<fstream>
 #include<vector>
+#include"graph.h"
 using namespace std;
 
-// Basic graph structure
-struct Graph {
-	int V, E;
-	vector<int> p;
-	vector< vector<pair<int, int> > > adj;
-	Graph() {} Graph(int _V, int _E) : V(_V), E(_E), adj(V + 1), p(V + 1, 0) {};
-};
+#define dbg(x)  cout << #x << " = " << x << endl
+
 
 // STP file format reader
 // Returns the read Graph in G
@@ -39,7 +35,7 @@ int STP_reader(string file_name, Graph &G){
 			return 2;
 		
 		stp_file >> s;
-		if (s == "Comments")
+		if (s == "Comments" or s == "Comment")
 			while (s != "END")
 				stp_file>>s;	// do correct later, not much use now
 		else if (s == "Graph"){
@@ -49,6 +45,7 @@ int STP_reader(string file_name, Graph &G){
 					stp_file >> V;
 				if (s == "Edges")
 					stp_file >> E;
+
 			}
 
 			G = Graph(V, E);
@@ -62,19 +59,28 @@ int STP_reader(string file_name, Graph &G){
 				stp_file >> s;
 				E--;
 			}
-			if (E)
+
+			if (E != 0)
 				return 2;
 		}	
 		else if (s == "Terminals"){
 			stp_file >> s >> nt;
 			stp_file >> s;
 			while (s != "END"){
-				stp_file >> a >> c;
-				G.p[a] = c;
-				stp_file>>s;
+				if (s == "T"){
+					stp_file >> a;
+					G.p[a] = 1e4;
+				}
+
+				if (s == "TP"){
+					stp_file >> a >> c;
+					G.p[a] = c;
+				}
+
 				nt--;
+				stp_file>>s;
 			}
-			if (nt)
+			if (nt != 0)
 				return 2;
 		}
 	}

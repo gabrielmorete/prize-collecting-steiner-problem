@@ -1,0 +1,28 @@
+STP File, STP Format Version 1.0
+
+SECTION Comments
+Name "ljubic_test"
+Creator "Ljubic"
+Problem "Prize-Collecting Steiner Problem in Graphs"
+END
+
+SECTION Graph
+Nodes 7
+Edges 6
+E 1 5 500
+E 1 6 500
+E 1 7 500
+E 2 5 50
+E 3 6 50
+E 4 7 50
+END
+
+SECTION Terminals
+Terminals 4
+TP 1 1000
+TP 2 1000
+TP 3 1000
+TP 4 1000
+END
+
+EOF

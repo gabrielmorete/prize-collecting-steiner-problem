@@ -138,14 +138,13 @@ namespace gmhu{
 
 	int nterm, term[MAXN], rterm[MAXN]; // terminal and reverse permutation
 
-	bool find_min_cut(int _n, double **adj, double *y){
+	bool find_min_cut(int _n, vector<vector<double>> &adj, double *y){
 		init();
 		
 		nterm = 0; // number of terminals, indexed by 1
 		n = _n;	
-		
-		// frr(v, n)
-		// 	dbg(y[v]);
+	
+		memset(rterm, 0, sizeof rterm);		
 
 		for (int v = 1; v <= n; v++)
 			if (y[v] > 0.5){
@@ -154,6 +153,8 @@ namespace gmhu{
 				rterm[v] = nterm;
 			}
 
+		if (nterm <= 1)
+			return false;
 
 		for (int v = 1; v <= nterm; v++) // indexed by terminals
 			for (int u = 1; u <= nterm; u++)
