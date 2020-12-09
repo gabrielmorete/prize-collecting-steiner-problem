@@ -180,8 +180,8 @@ class cut_tree: public GRBCallback{
 int main(){
 	Graph G; // type graph from stp reader
 
-	//string file_name = "ljubic3.stp";
-	string file_name = "B/b03.stp";
+	string file_name = "ljubic1.stp";
+//	string file_name = "B/b03.stp";
 
 
 	int _code = STP_reader(file_name, G);
