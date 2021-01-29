@@ -34,102 +34,21 @@
 
 */
 
+#define PCST // Signal for auxiliary libraries
+
 #include "gurobi_c++.h"
-#include "stp_reader.cpp"
+#include "stp_reader.h"
+#include "preprocessing.cpp"
 #include "debug.h"
+#include "dinic.h"
 #include <cassert>
-#include <cstdlib>
+#include <cstdlib>	
 #include <cstring>
 #include <cmath>
 #include <sstream>
 using namespace std;
 
 string itos(int i) {stringstream s; s << i; return s.str(); }
-
-const double EPS = 1e-4;
-int sign(double x){ return (x > EPS) - (x < -EPS); }
-
-typedef vector< vector<double> > matrix;	
-
-const int nmax = 400;
-
-const int MAXN = 6e3;
-const int MAXM = 2e4;
-
-int ned, first[MAXN], work[MAXN], dist[MAXN], q[MAXN]; // vertex information, integer
-
-double cap[MAXM], bcap[MAXM]; // edge capacity
-int to[MAXM], nxt[MAXM]; // edge information
-
-void init(){
-   memset(first, -1, sizeof first);
-   ned = 0;
-}
-
-void add(int u, int v, double f){
-	to[ned] = v, cap[ned] = f;
-	nxt[ned] = first[u];
-	first[u] = ned++;
-	
-	to[ned] = u, cap[ned] = 0;
-	nxt[ned] = first[v];
-	first[v] = ned++;
-}
-
-double dfs(int u, double f, int t){
-	if (u == t) 
-		return f;
-	for (int &e = work[u]; e != -1; e = nxt[e]){
-		int v = to[e];
-		if (dist[v] == dist[u] + 1 && sign(cap[e]) > 0){
-			double df = dfs(v, min(f, cap[e]), t);
-			if (sign(df) > 0){ // considerar sentido
-				// if (sign(cap[e] - df) <= 0){
-				// 	cap[e] = 0;
-				// 	cap[e^1] = bcap[e];
-				// }
-				// else{
-					cap[e] -= df;
-					cap[e^1] += df;
-				//}
-				return df;
-			}
-		}
-	}
-	return 0;
-}
-
-bool bfs(int s, int t){
-	memset(&dist, -1, sizeof dist);
-	dist[s] = 0;
-	int st = 0, en = 0;
-	q[en++] = s;
-	while (en > st){
-		int u = q[st++];
-		for (int e = first[u]; e != -1; e = nxt[e]){
-			int v = to[e];
-			if (dist[v] < 0 and sign(cap[e]) > 0){
-				dist[v] = dist[u] + 1;
-				q[en++] = v;
-			}
-		}
-	}
-
-	return dist[t] >= 0;
-}
-
-double dinic(int s, int t){ // tested Auizu, ok!
-	//memcpy(cap, bcap, sizeof cap);
-	double flow = 0, f;
-	//cout<<"entrei"<<endl;
-	while (bfs(s, t)){
-		memcpy(work, first, sizeof work);
-		while (f = dfs(s, INF, t) and sign(f) > 0) 
-			flow += f;
-	}
-	//cout<<"sai"<<endl;
-	return flow;
-}
 
 class cut_tree: public GRBCallback{
 	public:
@@ -142,61 +61,12 @@ class cut_tree: public GRBCallback{
 			vary =_y; varx = _x;  n = _n; adj = _adj; term = _term;
 		}
 	protected:
-		// void callback() {
-		// 	try {
-		// 		if (where == GRB_CB_MIPSOL) {
-		// 			// Found an integer feasible solution - does it form a tree?
-		// 			//cout<<getDoubleInfo(GRB_CB_MIP_OBJBST)<<endl;
-
-		// 			double y[n + 1];
-		// 			vector<vector<double>> x(n + 1, vector<double>(n + 1));
-					
-		// 			for (int v = 0; v <= n; v++)
-		// 				y[v] = getSolution(vary[v]);
-
-		// 			for (int v = 0; v <= n; v++){
-		// 				for (int u = 0; u <= n; u++)
-		// 					x[v][u] = getSolution(varx[v][u]);
-		// 			}
-
-		// 			init(); // start dinic	
-
-		// 			for (int v = 0; v <= n; v++)
-		// 				for (int u = 0; u <= n; u++)
-		// 					if (x[v][u] > 0){
-		// 						add(v, u, x[v][u]);
-		// 					}
-
-		// 			for (int vtx = 1; vtx <= n; vtx++){
-		// 				if (sign(dinic(0, vtx) - y[vtx]) < 0){
-		// 					GRBLinExpr cut = 0;
-
-		// 					for (int v = 0; v <= n; v++){
-		// 						if (dist[v] >= 0){ // terminal inside the cut
-		// 							for (int u = 1; u <= n; u++){
-		// 								if (dist[u] < 0)
-		// 									cut += varx[v][u];
-		// 							}
-		// 						}	
-		// 					}
-
-		// 					addLazy(cut >= vary[vtx]);
-		// 				}
-				
-		// 			}
-		// 		}
-		// 		} catch (GRBException e) {
-		// 			cout << "Error number: " << e.getErrorCode() << endl;
-		// 			cout << e.getMessage() << endl;
-		// 		} catch (...) {
-		// 			cout << "Error during callback" << endl;
-		// 		}
-		// }
 		void callback() {
 			try {
 				if (where == GRB_CB_MIPSOL) {
 					// Found an integer feasible solution - does it form a tree?
-					//cout<<getDoubleInfo(GRB_CB_MIP_OBJBST)<<endl;
+					//double dd = getDoubleInfo(GRB_CB_MIP_OBJBST);
+					//	cout<<getDoubleInfo(GRB_CB_MIP_OBJBST)<<endl;
 
 					double y[n + 1];
 					vector<vector<double>> x(n + 1, vector<double>(n + 1));
@@ -211,14 +81,6 @@ class cut_tree: public GRBCallback{
 					//		dbg(x[v][u]);
 						}
 					}
-
-					// init(); // start dinic	
-
-					// for (int v = 0; v <= n; v++)
-					// 	for (int u = 0; u <= n; u++)
-					// 		if (x[v][u] > 0){
-					// 			add(v, u, x[v][u]);
-					// 		}
 
 					for (int vtx = 1; vtx <= n; vtx++){
 						if (!term[vtx])
@@ -259,11 +121,6 @@ class cut_tree: public GRBCallback{
 								}	
 							}
 
-							//double ff = dinic(0, vtx);
-							//dbg(ff);
-							// if (sign(ff) <= 0)
-							// 	break;
-
 							f += dinic(0, vtx);
 						}
 					}
@@ -281,34 +138,47 @@ using dtype = long long int;
 
 int main(){
 	Graph G; // type graph from stp reader
-
-	//string file_name = "../instances/lujibic/ljubic3.stp";
-	//string file_name = "../instances/B/b01.stp";
-	//string file_name = "../instances/PCSPG-JMP/K100.10.stp";
+	GRBEnv env = GRBEnv(); // Gurobi env
 	
-	for (int i = 0; i < 5; i++){
-		//string nme = "ljubic" + itos(i);
-		string nme = "P400." + itos(i);
-		if (i == 0)
-			nme = "P400";
-		string file_name = "../instances/PCSPG-JMP/" + nme  +".stp";
-	//	string file_name = "../instances/ljubic/" + nme  +".stp";
-	//	dbg(file_name);
+	for (int i = 13; i < 41; i++){
+		//string nme = "P400." + itos(i);
+		string nme = "D" + itos(i) + "-A";
+		if (i < 10)
+			nme = "D0" + itos(i) + "-A";
+		if (i > 20){
+			nme = "D" + itos(i - 20) + "-B";
+			if (i < 30)
+				nme = "D0" + itos(i - 20) + "-B";
+		}
+
+		// if (i == 0)
+		// 	nme = "P400";
+//		string file_name = "../instances/PCSPG-JMP/" + nme  +".stp";
+		string file_name = "../instances/PCSPG-CRR/" + nme  +".stp";
+		//dbg(file_name);
 		int _code = STP_reader(file_name, G);
 		if (_code != 0){
 			cout<<"Error reading file - Code "<<_code<<endl;
 			return 0;
 		}
 
-		// Add agressive preprocessing step
-		////////////////////////////////////
-		////////////////////////////////////
+		int mold = G.E;
 
+		// Reduction steps
+		int en = preprocessing(G);
+	
+		double pn = 100*((double) (G.V - en)/G.V);
+		double pm = 100*((double) (mold - G.E)/mold);
 
 		int n = G.V, m = G.E;
 		bool term[n + 1];
 		vector<vector<bool>> adj(n + 1, vector<bool>(n + 1, 0));
-		dtype cost[n + 1][n + 1], dist[n + 1][n + 1];
+		dtype cost[n + 1][n + 1];
+
+		// printf("%s %d/%d(%.2f) %d/%d(%.2f)\n", nme.c_str(), n, en, pn, mold, m, pm);
+		// fflush(stdout);	
+		// continue;
+
 
 		G.p[0] = 0;
 
@@ -339,7 +209,6 @@ int main(){
 				cost[v][u.first] = u.second - G.p[u.first];
 			}	
 
-		GRBEnv env = GRBEnv();
 		GRBVar **x = new GRBVar*[n + 1];
 		for (int i = 0; i <= n; i++)
 			x[i] = new GRBVar[n + 1];
@@ -355,18 +224,19 @@ int main(){
 			// Setting some parameters
 			model.set(GRB_IntParam_OutputFlag, 0);
 			model.set(GRB_IntParam_LazyConstraints, 1);
-			model.set(GRB_DoubleParam_TimeLimit, 100.0);
+			model.set(GRB_DoubleParam_TimeLimit, 2000.0);
+			model.set(GRB_IntParam_Presolve, 2);
 		//	model.set(GRB_DoubleParam_Heuristics, 0.15);
 			
 
 			// Create binary decision variables
 			for (int v = 0; v <= n; v++)
 				for (int u = 0; u <= n; u++)
-					x[v][u] = model.addVar(0.0, (double) adj[v][u], 0, GRB_BINARY, "x_"+itos(v)+"_"+itos(u));
+					x[v][u] = model.addVar(0.0, (double) adj[v][u], 0, GRB_CONTINUOUS, "x_"+itos(v)+"_"+itos(u));
 			
 			y[0] = model.addVar(0.0, 1.0, 0, GRB_BINARY, "y_"+itos(0));
 			for (int v = 1; v <= n; v++)
-				y[v] = model.addVar(0.0, 1.0, 0, GRB_BINARY, "y_"+itos(v));
+				y[v] = model.addVar(0.0, 1.0, 0, GRB_CONTINUOUS, "y_"+itos(v));
 			
 			// Forbid edge from node back to itself
 			for (int v = 0; v <= n; v++)
@@ -419,21 +289,21 @@ int main(){
 					model.addConstr(expr >= 0, "flow_balance"+itos(v));
 				}		
 
-
-			
 			// Exclude inexisting edges
-			// for (int v = 1; v <= n; v++)
-			// 	for (int u = 1; u <= v; u++)
-			// 		if (!adj[v][u])
-			// 			x[v][u].set(GRB_DoubleAttr_UB, 0);
+			for (int v = 1; v <= n; v++)
+				for (int u = 1; u <= v; u++)
+					if (!adj[v][u])
+						x[v][u].set(GRB_DoubleAttr_UB, 0);
 
-
+			// Exclude inexisting verticies
+			for (int v = 1; v <= n; v++)
+				if (!term[v] and adj[v].size() == 0)		
+					y[v].set(GRB_DoubleAttr_UB, 0);
 
 			// Set Obj
 			dtype obj = 0;
 			for (int v = 1; v <= n; v++)
 				obj += G.p[v];
-			//dbg(obj);
 			expr = 0;
 			for (int v = 0; v <= n; v++)
 				for (int u = 0; u <= n; u++)
@@ -449,7 +319,6 @@ int main(){
 			model.setCallback(&cb);
 
 			// Optimize model
-
 			model.optimize();
 
 			// Extract solution
@@ -475,8 +344,9 @@ int main(){
 				// }	
 
 				double tme = model.get(GRB_DoubleAttr_Runtime);
-				cout<<nme<<' '<<tme<<' '<<(int)model.get(GRB_DoubleAttr_ObjVal)<<endl;;
-
+				dtype opt = (dtype) model.get(GRB_DoubleAttr_ObjVal);
+				printf("%s %d/%d(%.2f) %d/%d(%.2f) %.3f %d\n", nme.c_str(), n, en, pn, mold, m, pm, tme, opt);
+				fflush(stdout);	
 				for (int v = 0; v <= n; v++)
 					delete[] edge[v];
 				delete[] edge;			
@@ -499,5 +369,53 @@ int main(){
 	return 0;
 }
 
+// void callback() {
+// 	try {
+// 		if (where == GRB_CB_MIPSOL) {
+// 			// Found an integer feasible solution - does it form a tree?
+// 			//cout<<getDoubleInfo(GRB_CB_MIP_OBJBST)<<endl;
 
+// 			double y[n + 1];
+// 			vector<vector<double>> x(n + 1, vector<double>(n + 1));
+			
+// 			for (int v = 0; v <= n; v++)
+// 				y[v] = getSolution(vary[v]);
+
+// 			for (int v = 0; v <= n; v++){
+// 				for (int u = 0; u <= n; u++)
+// 					x[v][u] = getSolution(varx[v][u]);
+// 			}
+
+// 			init(); // start dinic	
+
+// 			for (int v = 0; v <= n; v++)
+// 				for (int u = 0; u <= n; u++)
+// 					if (x[v][u] > 0){
+// 						add(v, u, x[v][u]);
+// 					}
+
+// 			for (int vtx = 1; vtx <= n; vtx++){
+// 				if (sign(dinic(0, vtx) - y[vtx]) < 0){
+// 					GRBLinExpr cut = 0;
+
+// 					for (int v = 0; v <= n; v++){
+// 						if (dist[v] >= 0){ // terminal inside the cut
+// 							for (int u = 1; u <= n; u++){
+// 								if (dist[u] < 0)
+// 									cut += varx[v][u];
+// 							}
+// 						}	
+// 					}
+
+// 					addLazy(cut >= vary[vtx]);
+// 				}
 		
+// 			}
+// 		}
+// 		} catch (GRBException e) {
+// 			cout << "Error number: " << e.getErrorCode() << endl;
+// 			cout << e.getMessage() << endl;
+// 		} catch (...) {
+// 			cout << "Error during callback" << endl;
+// 		}
+// }		
