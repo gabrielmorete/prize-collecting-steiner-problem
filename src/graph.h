@@ -1,7 +1,7 @@
 #ifndef GRAPH
 #define GRAPH
 
-#include<vector>
+#include <vector>
 using namespace std;
 // Basic graph structure
 struct Graph {

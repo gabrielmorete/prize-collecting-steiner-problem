@@ -41,6 +41,7 @@
 #include "preprocessing.cpp"
 #include "debug.h"
 #include "dinic.h"
+#include "dsu.h"
 #include <cassert>
 #include <cstdlib>	
 #include <cstring>
@@ -49,6 +50,9 @@
 using namespace std;
 
 string itos(int i) {stringstream s; s << i; return s.str(); }
+
+
+const int MAXFEXEC = 100;
 
 class cut_tree: public GRBCallback{
 	public:
@@ -65,9 +69,7 @@ class cut_tree: public GRBCallback{
 			try {
 				if (where == GRB_CB_MIPSOL) {
 					// Found an integer feasible solution - does it form a tree?
-					//double dd = getDoubleInfo(GRB_CB_MIP_OBJBST);
-					//	cout<<getDoubleInfo(GRB_CB_MIP_OBJBST)<<endl;
-
+		
 					double y[n + 1];
 					vector<vector<double>> x(n + 1, vector<double>(n + 1));
 					
@@ -110,18 +112,17 @@ class cut_tree: public GRBCallback{
 							}
 
 							addLazy(cut >= vary[vtx]);
+	// fazendoe eradoooooooooooooooo
+							// for (int v = 0; v <= n; v++){
+							// 	if (dist[v] >= 0){ // terminal inside the cut
+							// 		for (int u = 1; u <= n; u++){
+							// 			if (dist[u] < 0 and adj[v][u])
+							// 				add(v, u, 1);
+							// 		}
+							// 	}	
+							// }
 
-	
-							for (int v = 0; v <= n; v++){
-								if (dist[v] >= 0){ // terminal inside the cut
-									for (int u = 1; u <= n; u++){
-										if (dist[u] < 0 and adj[v][u])
-											add(v, u, 1);
-									}
-								}	
-							}
-
-							f += dinic(0, vtx);
+							// f += dinic(0, vtx);
 						}
 					}
 				}
@@ -140,7 +141,7 @@ int main(){
 	Graph G; // type graph from stp reader
 	GRBEnv env = GRBEnv(); // Gurobi env
 	
-	for (int i = 13; i < 41; i++){
+	for (int i = 1; i < 41; i++){
 		//string nme = "P400." + itos(i);
 		string nme = "D" + itos(i) + "-A";
 		if (i < 10)
@@ -155,6 +156,8 @@ int main(){
 		// 	nme = "P400";
 //		string file_name = "../instances/PCSPG-JMP/" + nme  +".stp";
 		string file_name = "../instances/PCSPG-CRR/" + nme  +".stp";
+		// string file_name = "../instances/mst.stp";
+	
 		//dbg(file_name);
 		int _code = STP_reader(file_name, G);
 		if (_code != 0){
@@ -166,7 +169,11 @@ int main(){
 
 		// Reduction steps
 		int en = preprocessing(G);
-	
+		if (en == -1){
+			cout << "\033[1;31mFound inconsistency during presolve!!\033[0m\n";
+			continue;
+		}
+		// int en = 0;
 		double pn = 100*((double) (G.V - en)/G.V);
 		double pm = 100*((double) (mold - G.E)/mold);
 
@@ -179,9 +186,7 @@ int main(){
 		// fflush(stdout);	
 		// continue;
 
-
 		G.p[0] = 0;
-
 		term[0] = 1;
 		for (int v = 1; v <= n; v++){
 			term[v] = 0;
@@ -226,8 +231,7 @@ int main(){
 			model.set(GRB_IntParam_LazyConstraints, 1);
 			model.set(GRB_DoubleParam_TimeLimit, 2000.0);
 			model.set(GRB_IntParam_Presolve, 2);
-		//	model.set(GRB_DoubleParam_Heuristics, 0.15);
-			
+			// model.set(GRB_DoubleParam_Heuristics, 0.15);
 
 			// Create binary decision variables
 			for (int v = 0; v <= n; v++)
@@ -299,6 +303,73 @@ int main(){
 			for (int v = 1; v <= n; v++)
 				if (!term[v] and adj[v].size() == 0)		
 					y[v].set(GRB_DoubleAttr_UB, 0);
+		
+			// Minimun spanning tree constraints
+			bool tried[n + 1];	
+			int neq = 0, pnew[n + 1], min_cst[n + 1];
+			Dsu dsu = Dsu(n);
+
+
+			vector< tuple<dtype, int, int> > edges;
+			for (int v = 1; v <= n; v++)
+				for (auto e : G.adj[v])
+					if (v < e.first)
+						edges.push_back({e.second, v, e.first}); 
+
+			/// eradoo, pode não ser o minimo da adjacencia
+			/// pula a aresta minima e agora a custo ta errdo,
+			/// acho que da para corrigir "on_demand", marca
+			/// como tentando e não feito e salva o valor tentado
+			/// se for superior ao tentado e não feito, não junta
+			/// caso contrário, junta			
+
+
+			sort(edges.begin(), edges.end());		
+
+
+			for (int v = 1; v <= n; v++)
+				pnew[v] = G.p[v];
+
+			bool okk = 1;
+			while (okk){
+				okk = 0;
+				memset(tried, 0, sizeof tried);
+
+				for (auto e : edges){
+					int v, u, cs;
+					tie(cs, v, u) = e;
+					int rv = dsu.find(v);
+					int ru = dsu.find(u);
+					if (min(pnew[rv], pnew[ru]) > cs and ru != rv){
+						if ((tried[rv] and cs != min_cst[rv]) or (tried[ru] and cs != min_cst[ru]))
+							continue; // edge does not have minimal cost
+						dsu.merge(u, v);
+						pnew[dsu.find(v)] = pnew[rv] + pnew[ru] - cs;
+						model.addConstr(y[v] == y[u], "min_adj_"+itos(v)+"_"+itos(u));
+						model.addConstr(x[v][u] + x[u][v] >= y[v], "min_adj_e_"+itos(v)+"_"+itos(u));
+						
+						if (tried[rv] or tried[ru]){
+							tried[dsu.find(rv)] = 1;
+							min_cst[dsu.find(rv)] = min(tried[rv]? min_cst[rv] : INF, tried[ru]? min_cst[ru] : INF);
+						}
+
+						neq++; okk = 1;
+						en--;
+					}
+					else if (ru != rv){ // coudt add this edge, now it is minimal cost incident
+						if (!tried[rv]){
+							tried[rv] = 1;
+							min_cst[rv] = cs;
+						}
+						if (!tried[ru]){
+							tried[ru] = 1;
+							min_cst[ru] = cs;
+						}
+					}
+				}
+		}
+		
+			dbg(neq);
 
 			// Set Obj
 			dtype obj = 0;
@@ -322,7 +393,6 @@ int main(){
 			model.optimize();
 
 			// Extract solution
-
 			if (model.get(GRB_IntAttr_SolCount) > 0) { /////////////////////////
 				double *sol = model.get(GRB_DoubleAttr_X, y, n + 1);
 				
@@ -330,22 +400,34 @@ int main(){
 				for (int v = 0; v <= n; v++)
 					edge[v] = model.get(GRB_DoubleAttr_X, x[v], n + 1);
 
+				// double val = 0;
+
 				// cout << "Tree: ";
-				// for (int i = 0; i <= n; i++)
-				// 	if(sol[i] >= 0.5)
-				// 		cout<<i<<' ';
+				// for (int i = 0; i <= n; i++){
+				// 	// if(sol[i] >= 0.5)
+				// 	// 	cout<<i<<' ';
+				// 	val += G.p[i] *  (1 - sol[i]);
+				// 	// if (sol[i] > EPS and sol[i] < 1 - EPS)
+				// 	// 	cout<<i<<' '<<sol[i]<<endl;
+				// 		// dbg(sol[i]);
+				// }
 				// cout << endl;
 				// cout<<"Edges"<<endl;
 				// for (int v = 0; v <= n; v++){
 				// 	for (int u = 0; u <= n; u++){
-				// 		 if (edge[u][v] > 0.5)
-				// 			cout<<u<<' '<<v<<' '<<cost[u][v]<<endl;
+				// 		// if (edge[u][v] > 0.5)
+				// 		// 	cout<<u<<' '<<v<<' '<<cost[u][v] + G.p[v]<<endl;
+				// 		// val += (cost[u][v] + G.p[v]) * edge[u][v];
+				// 		// if (edge[v][u] > 0.1 and edge[v][u] < 0.9)
+				// 		// 	cout<<v<<' '<<u<<' '<<edge[v][u]<<endl;
 				// 	}
 				// }	
 
+				double pn = 100*((double) (G.V - en)/G.V);
+				double pm = 100*((double) (mold - G.E)/mold);
 				double tme = model.get(GRB_DoubleAttr_Runtime);
-				dtype opt = (dtype) model.get(GRB_DoubleAttr_ObjVal);
-				printf("%s %d/%d(%.2f) %d/%d(%.2f) %.3f %d\n", nme.c_str(), n, en, pn, mold, m, pm, tme, opt);
+				double opt = model.get(GRB_DoubleAttr_ObjVal);
+				printf("%s %d/%d(%.2f) %d/%d(%.2f) %.3f %.2f \n", nme.c_str(), n, en, pn, mold, m, pm, tme, opt);
 				fflush(stdout);	
 				for (int v = 0; v <= n; v++)
 					delete[] edge[v];

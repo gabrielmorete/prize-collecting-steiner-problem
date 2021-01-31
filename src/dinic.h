@@ -6,7 +6,7 @@
 #include <cstring>
 #include <cmath>
 
-const double EPS = 1e-4;
+const double EPS = 1e-6;
 int sign(double x){ return (x > EPS) - (x < -EPS); }
 
 typedef vector< vector<double> > matrix;	

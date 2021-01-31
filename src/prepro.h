@@ -1,3 +1,8 @@
+/* Author : Gabriel Morete de Azevedo
+   Preprocessing library for PCST
+   Auxiliary functions
+*/
+
 #ifndef PREPRO
 #define PREPRO
 
@@ -11,7 +16,6 @@
 #include<cstring>
 #include<cassert>
 using namespace std;
-
 
 typedef vector< vector<pair<int, int>>> vvii;
 typedef vector< vector<int>> vvi;
@@ -39,7 +43,9 @@ void dijkstra(int src, int n, vector<vector<pair<int, int>>> adj, vector<int> &d
 	} 
 }
 
-int check(int n, vector< vector< pair<int, int> > > adj){ // checa consistencia da saida
+// Check presolved graph for incosistencies, if one is found it returns -1
+// otherwise it returns 2|E|
+int check(int n, vector< vector< pair<int, int> > > adj){
 	int mat[n + 1][n + 1];
 	memset(mat, -1, sizeof mat);
 
@@ -51,10 +57,8 @@ int check(int n, vector< vector< pair<int, int> > > adj){ // checa consistencia 
 	for (int v = 1; v <= n; v++)
 		for (int u = 1; u <= n; u++)
 			if (mat[v][u] == 1){
-				if (mat[u][v] == -1){
-					cout<<"Erro : "<<v<<' '<<u<<endl;
+				if (mat[u][v] == -1)
 					return -1;
-				}
 				cnt++;
 			}
 	return cnt;			
@@ -101,53 +105,11 @@ bool add_adj(int a, int b, int cst, vector< vector< pair<int, int> > > &adj){
 	return 0;	
 }
 
-// fundir o vértice u ao vértice v ?????? check
-int fuse(int v, int u, int n, vector<vector<pair<int, int>>> &adj){
-	int dst[n + 1];
-	
-	memset(dst, -1, sizeof dst);
-
-	for (auto x : adj[v])
-		dst[x.first] = x.second;
-
-	for (auto x : adj[u]){
-		if (dst[x.first] == -1)
-			dst[x.first] = x.second;
-		else
-			dst[x.first] = min(dst[x.first], x.second);
-	}
-
-	for (auto x : adj[v]){	
-		int a = x.first;
-		if (a != u)
-			for (int i = 0; i < adj[a].size(); i++)
-				if (adj[a][i].first == v){
-					adj[a].erase(adj[a].begin() + i);
-					continue;
-				}
-	}		
-	for (auto x : adj[u]){	
-		int a = x.first;
-		if (a != v)
-			for (int i = 0; i < adj[a].size(); i++)
-				if (adj[a][i].first == u){
-					adj[a].erase(adj[a].begin() + i);
-					continue;
-				}
-	}
-
-	int clr = adj[v].size() + adj[u].size() - 1;
-	adj[v].clear();
-	adj[u].clear();
-
-	for (int a = 1; a <= n; a++)
-		if (a != v and a != u and dst[a] != -1){
-			adj[v].push_back({a, dst[a]});
-			adj[a].push_back({v, dst[a]});
-			clr--;
-		}
-	
-	return clr;
+int get_min(int vtx, vvii &adj){
+	int mn = adj[vtx][0].second;
+	for (auto x : adj[vtx])
+		mn = min(mn, x.second);
+	return mn;
 }
 
 #endif 

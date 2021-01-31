@@ -12,4 +12,13 @@
 
 const int INF = 0x3f3f3f3f;
 
+void debug_adj(int v, vector<vector<pair<int, int>>> &adj){
+	cout<<"*** Adj "<<v<<" ***"<<endl;
+	for (auto x : adj[v])
+		cout<<x.first<<' '<<x.second<<endl;
+
+	cout<<"*******"<<endl;
+}
+
+
 #endif 

@@ -2,11 +2,13 @@
    Preprocessing library for PCST
 */
 
-#include"debug.h"
-#include"prepro.h"
-#include"stp_reader.h"
-#include"graph.h"
-#include"pcdist.cpp"
+#include "prepro.h"
+#include "stp_reader.h"
+#include "graph.h"
+#include "pcdist.cpp"
+#include "dsu.h"
+#include "debug.h"
+
 using namespace std;
 
 bool least_cost(int &n, int &m, vvii &adj, vvi &dist){
@@ -108,38 +110,63 @@ bool degree_3(int &n, int &m, int &en, vector<bool> &term, vvii &adj, vvi &dist)
 	return ok;	
 }
 
-bool min_adj(int &n, int &m, int &en, vector<bool> &term, vvii &adj, Graph &G){
-	bool ok = 0;
-	for (int v = 1; v <= n; v++){
-		if (!term[v] or adj[v].empty())
-			continue;
-	
-		int cmn = adj[v][0].second;
-		for (auto x : adj[v])
-			cmn = min(cmn, x.second);
+// bool min_adj(int &n, int &m, int &en, vector<bool> &term, vvii &adj, vi &p){
+// 	bool ok = 0;
+// 	int pnew[n + 1];
+// 	Dsu dsu = Dsu(n);
 
-		for (auto x : adj[v]){
-			int u = x.first;
-			int cst = x.second;
+// 	vector< tuple<int, int, int> > edges;
+// 	for (int v = 1; v <= n; v++)
+// 		for (auto e : G.adj[v])
+// 			if (v < e.first)
+// 				edges.push_back({e.second, v, e.first}); 
 
-			if (!term[u] or cmn != cst)
-				continue;
+// 	sort(edges.begin(), edges.end());		
 
-			if (min(G.p[v], G.p[u]) > cst){
-				m -= fuse(v, u, n, adj);
-				G.p[v] = G.p[v] + G.p[u] - cst;
-				G.p[u] = 0;
-				term[u] = 0;
-				en--;
-				ok = 1;
-				break;
-			}
-		}		
-	}
-	return ok;
-}
+// 	for (int v = 1; v <= n; v++)
+// 		pnew[v] = G.p[v];
+
+// 	for (auto e : edges){
+// 		int v, u, cs;
+// 		tie(cs, v, u) = e;
+// 		int rv = dsu.find(v);
+// 		int ru = dsu.find(u);
+// 		if (min(pnew[rv], pnew[ru]) > cs and dsu.merge(u, v))
+// 			pnew[dsu.find(v)] = pnew[rv] + pnew[ru] - cs;
+// 	}
+
+// 	Dsu dsur = Dsu(n + 1);
+
+// 	edges.clear();
+// 	for (int v = 1; v <= n; v++)
+// 		for (auto e : G.adj[v])
+// 			if (v < e.first and dsu.find(v) != dsu.find(e.first)) // between components
+// 				edges.push_back({e.second, v, e.first});
+
+// 	sort(edges.begin(), edges.end());		
+
+// 	int count = 0;
+
+// 	for (auto e : edges){
+// 		int v, u, cs;
+// 		tie(cs, v, u) = e;
+// 		int rv = dsu.find(v);
+// 		int ru = dsu.find(u);
+// 		if (!dsu.merge(ru, rv)){ // erase it!
+// 			erase_adj(v, u, adj);
+// 			erase_adj(u, v, adj);
+// 			count++;
+// 		}
+// 	}
+
+// 	cout<<"count   "<<count<<endl;
+
+// 	return ok;
+// }
 
 
+// Preprocessing function, if some error occour the return value is -1,
+// othwewise is the number of real vertices remaining in the graph.
 int preprocessing(Graph &G){
 	int n = G.V;
 	int m = G.E;
@@ -182,9 +209,8 @@ int preprocessing(Graph &G){
 	
 		} while (ok);
 
-		// quebrado, não sei pq, olhar depois
-		
-	//	ok |= min_adj(n, m, en, term, adj, G);	
+
+		// ok |= min_adj(n, m, en, term, adj, p);	
 	}	
 	
 	int sum = 0;
@@ -192,25 +218,22 @@ int preprocessing(Graph &G){
 		sum += adj[v].size();
 
 	if (sum != check(G.V, adj))
-		cout<<"Fudeu"<<endl;
-
+		return -1;
+	
 	// cout<<"Vtx : "<<G.V<<' '<<en<<' '<<100*((double) (G.V - en)/G.V)<<"%"<<endl;
 	// cout<<"Edg : "<<G.E<<' '<<m<<' '<<100*((double) (G.E - m)/G.E)<<"%"<<endl;
 
-
-
 	G.adj = adj;
+	G.p = p;
 	G.E = m;
-	//G.V = n; // é errado fazer isso sem modificar a indexação
 	return en;	
 }
 
 #ifndef PCST
 
 int main(){
-	string s = "../instances/PCSPG-JMP/P400.3.stp";
+	string s = "../instances/mst.stp";
 	//string s = "../instances/PCSPG-CRR/C02-A.stp";
-	//string s = "../instances/morete.stp";
 
 	Graph G;
 	
