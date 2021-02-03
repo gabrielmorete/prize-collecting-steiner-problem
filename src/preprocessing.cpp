@@ -8,7 +8,8 @@
 #include "pcdist.cpp"
 #include "dsu.h"
 #include "debug.h"
-
+#include <map>
+#include <chrono>
 using namespace std;
 
 bool least_cost(int &n, int &m, vvii &adj, vvi &dist){
@@ -110,59 +111,143 @@ bool degree_3(int &n, int &m, int &en, vector<bool> &term, vvii &adj, vvi &dist)
 	return ok;	
 }
 
-// bool min_adj(int &n, int &m, int &en, vector<bool> &term, vvii &adj, vi &p){
-// 	bool ok = 0;
-// 	int pnew[n + 1];
-// 	Dsu dsu = Dsu(n);
+bool mst_test(int &n, int &m, int &en, vector<bool> &term, vvii &adj, vi &p){
+	bool tried[n + 1];	
+	int pnew[n + 1], min_cst[n + 1];
+	Dsu dsu = Dsu(n);
 
-// 	vector< tuple<int, int, int> > edges;
-// 	for (int v = 1; v <= n; v++)
-// 		for (auto e : G.adj[v])
-// 			if (v < e.first)
-// 				edges.push_back({e.second, v, e.first}); 
+	vector< tuple<int, int, int> > edges;
+	for (int v = 1; v <= n; v++)
+		for (auto e : adj[v])
+			if (v < e.first)
+				edges.push_back({e.second, v, e.first}); 
 
-// 	sort(edges.begin(), edges.end());		
+	sort(edges.begin(), edges.end());		
 
-// 	for (int v = 1; v <= n; v++)
-// 		pnew[v] = G.p[v];
+	for (int v = 1; v <= n; v++)
+		pnew[v] = p[v];
 
-// 	for (auto e : edges){
-// 		int v, u, cs;
-// 		tie(cs, v, u) = e;
-// 		int rv = dsu.find(v);
-// 		int ru = dsu.find(u);
-// 		if (min(pnew[rv], pnew[ru]) > cs and dsu.merge(u, v))
-// 			pnew[dsu.find(v)] = pnew[rv] + pnew[ru] - cs;
-// 	}
+	bool okk = 1;
+	while (okk){
+		okk = 0;
+		memset(tried, 0, sizeof tried);
 
-// 	Dsu dsur = Dsu(n + 1);
+		for (auto e : edges){
+			int v, u, cs;
+			tie(cs, v, u) = e;
+			int rv = dsu.find(v);
+			int ru = dsu.find(u);
+			if (min(pnew[rv], pnew[ru]) > cs and ru != rv){
+				if ((tried[rv] and cs != min_cst[rv]) or (tried[ru] and cs != min_cst[ru]))
+					continue; // edge does not have minimal cost
+				dsu.merge(u, v);
+				pnew[dsu.find(v)] = pnew[rv] + pnew[ru] - cs;
+				if (tried[rv] or tried[ru]){
+					tried[dsu.find(rv)] = 1;
+					min_cst[dsu.find(rv)] = min(tried[rv]? min_cst[rv] : INF, tried[ru]? min_cst[ru] : INF);
+				}
+				okk = 1;
+				en--;
+			}
+			else if (ru != rv){ // coudt add this edge, now it is minimal cost incident
+				if (!tried[rv]){
+					tried[rv] = 1;
+					min_cst[rv] = cs;
+				}
+				if (!tried[ru]){
+					tried[ru] = 1;
+					min_cst[ru] = cs;
+				}
+			}
+		}
+	}	
 
-// 	edges.clear();
-// 	for (int v = 1; v <= n; v++)
-// 		for (auto e : G.adj[v])
-// 			if (v < e.first and dsu.find(v) != dsu.find(e.first)) // between components
-// 				edges.push_back({e.second, v, e.first});
+	vector< tuple<int, int, int> > edges2;
 
-// 	sort(edges.begin(), edges.end());		
+	for (auto e : edges)
+		if (dsu.find(get<1>(e)) != dsu.find(get<2>(e)))
+			edges2.push_back(e);
 
-// 	int count = 0;
+	int removed = 0;	
 
-// 	for (auto e : edges){
-// 		int v, u, cs;
-// 		tie(cs, v, u) = e;
-// 		int rv = dsu.find(v);
-// 		int ru = dsu.find(u);
-// 		if (!dsu.merge(ru, rv)){ // erase it!
-// 			erase_adj(v, u, adj);
-// 			erase_adj(u, v, adj);
-// 			count++;
-// 		}
-// 	}
+	map< pair<int, int>, int > join;
 
-// 	cout<<"count   "<<count<<endl;
+	for (auto e : edges2){
+		int v, u, cs;
+		tie(cs, v, u) = e;	
 
-// 	return ok;
-// }
+		if (!join.count({dsu.find(v), dsu.find(u)})){
+			join[{dsu.find(v), dsu.find(u)}] = 1;
+			join[{dsu.find(u), dsu.find(v)}] = 1;
+		}
+		else {
+			erase_adj(v, u, adj);
+			erase_adj(u, v, adj);
+			m--;
+			removed++;
+		}
+	}	
+
+	if(removed != 0)
+		cout<<"mst : "<<removed<<endl;
+
+	return 0;
+}
+
+
+bool min_adj(int &n, int &m, int &en, vector<bool> &term, vvii &adj, vi &p){
+	bool ok = 0;
+	int pnew[n + 1];
+	Dsu dsu = Dsu(n);
+
+	vector< tuple<int, int, int> > edges;
+	for (int v = 1; v <= n; v++)
+		for (auto e : G.adj[v])
+			if (v < e.first)
+				edges.push_back({e.second, v, e.first}); 
+
+	sort(edges.begin(), edges.end());		
+
+	for (int v = 1; v <= n; v++)
+		pnew[v] = G.p[v];
+
+	for (auto e : edges){
+		int v, u, cs;
+		tie(cs, v, u) = e;
+		int rv = dsu.find(v);
+		int ru = dsu.find(u);
+		if (min(pnew[rv], pnew[ru]) > cs and dsu.merge(u, v))
+			pnew[dsu.find(v)] = pnew[rv] + pnew[ru] - cs;
+	}
+
+	Dsu dsur = Dsu(n + 1);
+
+	edges.clear();
+	for (int v = 1; v <= n; v++)
+		for (auto e : G.adj[v])
+			if (v < e.first and dsu.find(v) != dsu.find(e.first)) // between components
+				edges.push_back({e.second, v, e.first});
+
+	sort(edges.begin(), edges.end());		
+
+	int count = 0;
+
+	for (auto e : edges){
+		int v, u, cs;
+		tie(cs, v, u) = e;
+		int rv = dsu.find(v);
+		int ru = dsu.find(u);
+		if (!dsu.merge(ru, rv)){ // erase it!
+			erase_adj(v, u, adj);
+			erase_adj(u, v, adj);
+			count++;
+		}
+	}
+
+	cout<<"count   "<<count<<endl;
+
+	return ok;
+}
 
 
 // Preprocessing function, if some error occour the return value is -1,
@@ -184,7 +269,6 @@ int preprocessing(Graph &G){
 
 	bool ok = 1;
 	while (ok){
-	
 		do{
 			do{
 				do{
@@ -210,7 +294,10 @@ int preprocessing(Graph &G){
 		} while (ok);
 
 
-		// ok |= min_adj(n, m, en, term, adj, p);	
+		min_adj(n, m, en, term, adj, p);
+
+
+		mst_test(n, m, en, term, adj, p);	
 	}	
 	
 	int sum = 0;

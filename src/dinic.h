@@ -14,7 +14,7 @@ typedef vector< vector<double> > matrix;
 const int nmax = 400;
 
 const int MAXN = 6e3;
-const int MAXM = 2e4;
+const int MAXM = 8e4;
 
 int ned, first[MAXN], work[MAXN], dist[MAXN], q[MAXN]; // vertex information, integer
 
@@ -72,13 +72,24 @@ bool bfs(int s, int t){
 	return dist[t] >= 0;
 }
 
-double dinic(int s, int t){ // tested Auizu, ok!
+double dinic(int s, int t){
 	double flow = 0, f;
 	while (bfs(s, t)){
 		memcpy(work, first, sizeof work);
-		while (f = dfs(s, INF, t) and sign(f) > 0) 
+		
+		do {
+			f = dfs(s, 1e18, t);
 			flow += f;
+		} while (sign(f > 0));
+		// printf("%.2e\n", flow);
+		// fflush(stdout);
+		// while (f = dfs(s, 1e18, t) and sign(f) > 0){ 
+		// 	printf("%.3e \n",f);
+		// 	fflush(stdout);
+		// 	flow += f;
+		// }	
 	}
+
 	return flow;
 }
 
