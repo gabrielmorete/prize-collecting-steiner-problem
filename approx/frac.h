@@ -1,3 +1,5 @@
+// Simple library for rational numbers
+
 #ifndef FRAC
 #define FRAC
 
@@ -6,15 +8,17 @@
 struct frac{
 	long long a, b;
 	frac() : a(0), b(1) {}
-	frac(int _a, int _b){ 
-		long long c = __gcd(_a, _b); 
-		a = _a / c;
-		b = _b / c;
+	frac(long long _a, long long _b){ 
+		a = _a;
+		b = _b;
 		simpfy();
 	}
 
+	frac(long long _a){ a = _a; b = 1; }
+	// frac(double val){ *this = frac((long long) (val * 1e10), (long long) 1e10);}
+
 	frac simpfy(){
-		long long c = __gcd(abs(a), abs(b));
+		long long c = std::__gcd(abs(a), abs(b));
 		a = ((a < 0) ^ (b < 0) ? -abs(a) : abs(a));
 		a = a / c;
 		b = abs(b) / c;
@@ -49,11 +53,22 @@ struct frac{
 		return frac(top, bot).simpfy(); 
 	}
 
+	inline void operator=(frac p){ a = p.a; b = p.b;}
+	inline bool operator==(frac &p){ return (a == p.a) and (b == p.b); }
+	inline bool operator!=(frac &p){ return (a != p.a) or (b != p.b); }
+	inline bool operator<(const frac &p) const { return a * p.b < p.a * b; }
+	inline bool operator>(const frac &p) const { return a * p.b > p.a * b; }
+	inline bool operator<=(const frac &p) const { return a * p.b <= p.a * b; }
+	inline bool operator>=(const frac &p) const { return a * p.b >= p.a * b; }
+
 	double val(){ return ((double) a) / ((double) b);}
 
-	inline bool operator<(frac &p){ return a * p.b < p.a * b; }
-
-	void print(){ cout<<a<<'/'<<b<<endl; }
+	void print(){ std::cout<<a<<'/'<<b<<std::endl; }
 };
 
+ 
+std::basic_ostream<char>& operator<<(std::basic_ostream<char> &o, const frac &f){
+	o << f.a << "/" << f.b;
+	return o;
+}
 #endif
