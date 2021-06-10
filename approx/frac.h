@@ -4,6 +4,8 @@
 #define FRAC
 
 #include <cmath>
+#include <ostream>
+#include <iostream>
 
 struct frac{
 	long long a, b;
@@ -55,7 +57,9 @@ struct frac{
 
 	inline void operator=(frac p){ a = p.a; b = p.b;}
 	inline bool operator==(frac &p){ return (a == p.a) and (b == p.b); }
+	inline bool operator==(frac p){ return (a == p.a) and (b == p.b); }
 	inline bool operator!=(frac &p){ return (a != p.a) or (b != p.b); }
+	// inline bool operator!=(frac p){ return (a != p.a) or (b != p.b); }
 	inline bool operator<(const frac &p) const { return a * p.b < p.a * b; }
 	inline bool operator>(const frac &p) const { return a * p.b > p.a * b; }
 	inline bool operator<=(const frac &p) const { return a * p.b <= p.a * b; }

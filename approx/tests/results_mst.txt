@@ -1,0 +1,464 @@
+With MST tests
+
+P min 0.566028  max 9.87342 	avg 2.6158 		nopt 0
+K min 0 		max 11.6657 	avg 2.90108 	nopt 8
+C min 0 		max 42.1053 	avg 11.3735 	nopt 5
+D min 0 		max 53.5714 	avg 12.747 		nopt 5
+E min 0 		max 67.2289 	avg 17.2959 	nopt 6
+
+
+Now we justify maxgap values
+
+C - High gaps
+C16-A 18 11 38.8889%
+C16-B 19 11 42.1053%
+
+D - High gaps
+D17-B 41 23 43.9024%
+D16-B 28 13 53.5714%
+
+
+H - High gaps
+E12-A 55 29 47.2727%
+E07-B 415 136 67.2289%
+
+
+
+General results, reduced is the value reduced by the mst reduction step
+
+
+
+reduced : 1.65839
+nome    valor   otimo     gap%
+P100 809377 803300 0.750824%
+reduced : 0.901327
+nome    valor   otimo     gap%
+P100.1 957313 926238 3.24606%
+reduced : 0.0338723
+nome    valor   otimo     gap%
+P100.2 445641 401641 9.87342%
+reduced : 0
+nome    valor   otimo     gap%
+P100.3 676158 659644 2.44233%
+reduced : 0.432726
+nome    valor   otimo     gap%
+P100.4 838229 827419 1.28962%
+reduced : 0
+nome    valor   otimo     gap%
+P200 1.32538e+06 1.31787e+06 0.566028%
+reduced : 1.81747
+nome    valor   otimo     gap%
+P400 2.49742e+06 2.4599e+06 1.50199%
+reduced : 0.644829
+nome    valor   otimo     gap%
+P400.1 2.86481e+06 2.80844e+06 1.96753%
+reduced : 1.18249
+nome    valor   otimo     gap%
+P400.2 2.55941e+06 2.51858e+06 1.59529%
+reduced : 0.449679
+nome    valor   otimo     gap%
+P400.3 2.99661e+06 2.95172e+06 1.49799%
+reduced : 0.226383
+nome    valor   otimo     gap%
+P400.4 2.93614e+06 2.81744e+06 4.04276%
+
+
+nome    valor   otimo     gap%
+K100 135511 135511 0%
+nome    valor   otimo     gap%
+K100.1 124108 124108 0%
+nome    valor   otimo     gap%
+K100.2 215036 200262 6.87048%
+nome    valor   otimo     gap%
+K100.3 115953 115953 0%
+nome    valor   otimo     gap%
+K100.4 88159 87498 0.749782%
+reduced : 0
+nome    valor   otimo     gap%
+K100.5 119078 119078 0%
+reduced : 0
+nome    valor   otimo     gap%
+K100.6 132886 132886 0%
+nome    valor   otimo     gap%
+K100.7 184084 172457 6.31614%
+nome    valor   otimo     gap%
+K100.8 238717 210869 11.6657%
+nome    valor   otimo     gap%
+K100.9 122917 122917 0%
+nome    valor   otimo     gap%
+K100.10 133567 133567 0%
+reduced : 0.427951
+nome    valor   otimo     gap%
+K200 342027 329211 3.74707%
+reduced : 0
+nome    valor   otimo     gap%
+K400 378259 350093 7.44622%
+reduced : 0
+nome    valor   otimo     gap%
+K400.1 492424 490771 0.335686%
+reduced : 0
+nome    valor   otimo     gap%
+K400.2 478238 477073 0.243603%
+reduced : 0
+nome    valor   otimo     gap%
+K400.3 428950 401881 6.31053%
+reduced : 0.219518
+nome    valor   otimo     gap%
+K400.4 393181 389451 0.948672%
+nome    valor   otimo     gap%
+K400.5 557637 519526 6.83437%
+nome    valor   otimo     gap%
+K400.6 389297 374849 3.71131%
+reduced : 0.384842
+nome    valor   otimo     gap%
+K400.7 474466 474466 0%
+reduced : 0
+nome    valor   otimo     gap%
+K400.8 421979 418614 0.797433%
+nome    valor   otimo     gap%
+K400.9 410356 383105 6.64082%
+reduced : 0.914269
+nome    valor   otimo     gap%
+K400.10 411074 394191 4.10705%
+
+
+
+nome    valor   otimo     gap%
+C01-A 18 18 0%
+nome    valor   otimo     gap%
+C02-A 50 50 0%
+nome    valor   otimo     gap%
+C03-A 430 414 3.72093%
+nome    valor   otimo     gap%
+C04-A 639 618 3.28638%
+reduced : 0
+nome    valor   otimo     gap%
+C05-A 1098 1080 1.63934%
+nome    valor   otimo     gap%
+C06-A 18 18 0%
+nome    valor   otimo     gap%
+C07-A 50 50 0%
+reduced : 0
+nome    valor   otimo     gap%
+C08-A 380 361 5%
+reduced : 0.179856
+nome    valor   otimo     gap%
+C09-A 555 533 3.96396%
+reduced : 0.680272
+nome    valor   otimo     gap%
+C10-A 876 859 1.94064%
+nome    valor   otimo     gap%
+C11-A 18 18 0%
+reduced : 0
+nome    valor   otimo     gap%
+C12-A 42 38 9.52381%
+reduced : 0.398406
+nome    valor   otimo     gap%
+C13-A 250 236 5.6%
+reduced : 0.946372
+nome    valor   otimo     gap%
+C14-A 314 293 6.6879%
+reduced : 0.954198
+nome    valor   otimo     gap%
+C15-A 519 501 3.46821%
+nome    valor   otimo     gap%
+C16-A 18 11 38.8889%
+reduced : 0
+nome    valor   otimo     gap%
+C17-A 23 18 21.7391%
+reduced : 2.30769
+nome    valor   otimo     gap%
+C18-A 127 111 12.5984%
+reduced : 0.621118
+nome    valor   otimo     gap%
+C19-A 160 146 8.75%
+reduced : 0
+nome    valor   otimo     gap%
+C20-A 268 265 1.1194%
+reduced : 0
+nome    valor   otimo     gap%
+C01-B 110 85 22.7273%
+reduced : 0
+nome    valor   otimo     gap%
+C02-B 170 141 17.0588%
+reduced : 0.765306
+nome    valor   otimo     gap%
+C03-B 778 737 5.26992%
+reduced : 0.69869
+nome    valor   otimo     gap%
+C04-B 1137 1063 6.50836%
+reduced : 0.836013
+nome    valor   otimo     gap%
+C05-B 1542 1528 0.907912%
+reduced : 0
+nome    valor   otimo     gap%
+C06-B 77 55 28.5714%
+reduced : 0
+nome    valor   otimo     gap%
+C07-B 124 102 17.7419%
+reduced : 2.65957
+nome    valor   otimo     gap%
+C08-B 549 500 8.92532%
+reduced : 1.07095
+nome    valor   otimo     gap%
+C09-B 739 694 6.08931%
+reduced : 1.88004
+nome    valor   otimo     gap%
+C10-B 1096 1069 2.4635%
+reduced : 0
+nome    valor   otimo     gap%
+C11-B 42 32 23.8095%
+reduced : 0
+nome    valor   otimo     gap%
+C12-B 77 46 40.2597%
+reduced : 3.75427
+nome    valor   otimo     gap%
+C13-B 282 258 8.51064%
+reduced : 1.47059
+nome    valor   otimo     gap%
+C14-B 335 318 5.07463%
+reduced : 2.25303
+nome    valor   otimo     gap%
+C15-B 564 551 2.30496%
+reduced : 0
+nome    valor   otimo     gap%
+C16-B 19 11 42.1053%
+reduced : 0
+nome    valor   otimo     gap%
+C17-B 26 18 30.7692%
+reduced : 2.27273
+nome    valor   otimo     gap%
+C18-B 129 113 12.4031%
+reduced : 3.06748
+nome    valor   otimo     gap%
+C19-B 158 146 7.59494%
+reduced : 0
+nome    valor   otimo     gap%
+C20-B 269 167 37.9182%
+
+
+nome    valor   otimo     gap%
+D01-A 18 18 0%
+nome    valor   otimo     gap%
+D02-A 50 50 0%
+nome    valor   otimo     gap%
+D03-A 838 807 3.69928%
+reduced : 0
+nome    valor   otimo     gap%
+D04-A 1222 1203 1.55483%
+reduced : 0.137174
+nome    valor   otimo     gap%
+D05-A 2184 2157 1.23626%
+nome    valor   otimo     gap%
+D06-A 18 18 0%
+nome    valor   otimo     gap%
+D07-A 50 50 0%
+reduced : 0
+nome    valor   otimo     gap%
+D08-A 797 755 5.26976%
+reduced : 0.88968
+nome    valor   otimo     gap%
+D09-A 1114 1070 3.94973%
+reduced : 0.525394
+nome    valor   otimo     gap%
+D10-A 1704 1671 1.93662%
+nome    valor   otimo     gap%
+D11-A 18 18 0%
+nome    valor   otimo     gap%
+D12-A 50 42 16%
+reduced : 1.02669
+nome    valor   otimo     gap%
+D13-A 482 445 7.67635%
+reduced : 2.41692
+nome    valor   otimo     gap%
+D14-A 646 602 6.81115%
+reduced : 1.10193
+nome    valor   otimo     gap%
+D15-A 1077 1042 3.24977%
+nome    valor   otimo     gap%
+D16-A 18 13 27.7778%
+reduced : 0
+nome    valor   otimo     gap%
+D17-A 37 23 37.8378%
+reduced : 3.13725
+nome    valor   otimo     gap%
+D18-A 247 218 11.7409%
+reduced : 4.51977
+nome    valor   otimo     gap%
+D19-A 338 306 9.46746%
+reduced : 0.184502
+nome    valor   otimo     gap%
+D20-A 541 536 0.924214%
+reduced : 0
+nome    valor   otimo     gap%
+D01-B 133 106 20.3008%
+reduced : 0
+nome    valor   otimo     gap%
+D02-B 322 218 32.2981%
+reduced : 1.29641
+nome    valor   otimo     gap%
+D03-B 1675 1509 9.91045%
+reduced : 1.42639
+nome    valor   otimo     gap%
+D04-B 1935 1881 2.7907%
+reduced : 1.97348
+nome    valor   otimo     gap%
+D05-B 3179 3135 1.38408%
+reduced : 0
+nome    valor   otimo     gap%
+D06-B 105 67 36.1905%
+reduced : 0
+nome    valor   otimo     gap%
+D07-B 154 103 33.1169%
+reduced : 1.87553
+nome    valor   otimo     gap%
+D08-B 1151 1036 9.99131%
+reduced : 3.09981
+nome    valor   otimo     gap%
+D09-B 1563 1420 9.14907%
+reduced : 1.11266
+nome    valor   otimo     gap%
+D10-B 2133 2079 2.53165%
+reduced : 0
+nome    valor   otimo     gap%
+D11-B 48 29 39.5833%
+reduced : 0
+nome    valor   otimo     gap%
+D12-B 64 42 34.375%
+reduced : 2.50896
+nome    valor   otimo     gap%
+D13-B 544 486 10.6618%
+reduced : 2.58856
+nome    valor   otimo     gap%
+D14-B 715 665 6.99301%
+reduced : 2.49355
+nome    valor   otimo     gap%
+D15-B 1134 1108 2.29277%
+reduced : 0
+nome    valor   otimo     gap%
+D16-B 28 13 53.5714%
+reduced : 0
+nome    valor   otimo     gap%
+D17-B 41 23 43.9024%
+reduced : 4.54545
+nome    valor   otimo     gap%
+D18-B 252 223 11.5079%
+reduced : 3.67232
+nome    valor   otimo     gap%
+D19-B 341 310 9.09091%
+reduced : 0.183824
+nome    valor   otimo     gap%
+D20-B 543 537 1.10497%
+
+
+nome    valor   otimo     gap%
+E01-A 13 13 0%
+nome    valor   otimo     gap%
+E02-A 30 30 0%
+reduced : 0
+nome    valor   otimo     gap%
+E03-A 2240 2231 0.401786%
+reduced : 0.0623247
+nome    valor   otimo     gap%
+E04-A 3207 3151 1.74618%
+nome    valor   otimo     gap%
+E05-A 6933 5657 18.4047%
+nome    valor   otimo     gap%
+E06-A 19 19 0%
+nome    valor   otimo     gap%
+E07-A 40 40 0%
+reduced : 0.402617
+nome    valor   otimo     gap%
+E08-A 1979 1878 5.10359%
+reduced : 0.481928
+nome    valor   otimo     gap%
+E09-A 2891 2787 3.59737%
+reduced : 0.718816
+nome    valor   otimo     gap%
+E10-A 4696 2586 44.9319%
+nome    valor   otimo     gap%
+E11-A 21 21 0%
+nome    valor   otimo     gap%
+E12-A 55 29 47.2727%
+reduced : 1.21488
+nome    valor   otimo     gap%
+E13-A 1301 1169 10.146%
+reduced : 1.11896
+nome    valor   otimo     gap%
+E14-A 1679 1579 5.95593%
+reduced : 1.71533
+nome    valor   otimo     gap%
+E15-A 2693 2610 3.08206%
+reduced : 0
+nome    valor   otimo     gap%
+E16-A 31 15 51.6129%
+reduced : 0
+nome    valor   otimo     gap%
+E17-A 44 25 43.1818%
+reduced : 3.38733
+nome    valor   otimo     gap%
+E18-A 656 555 15.3963%
+reduced : 2.30303
+nome    valor   otimo     gap%
+E19-A 806 747 7.3201%
+reduced : 0.369276
+nome    valor   otimo     gap%
+E20-A 1349 1331 1.33432%
+nome    valor   otimo     gap%
+E01-B 109 109 0%
+reduced : 0
+nome    valor   otimo     gap%
+E02-B 282 170 39.7163%
+reduced : 1.08363
+nome    valor   otimo     gap%
+E03-B 4199 3806 9.35937%
+reduced : 1.92528
+nome    valor   otimo     gap%
+E04-B 5145 4888 4.99514%
+reduced : 1.76456
+nome    valor   otimo     gap%
+E05-B 8128 7998 1.59941%
+nome    valor   otimo     gap%
+E06-B 156 70 55.1282%
+nome    valor   otimo     gap%
+E07-B 415 136 67.2289%
+reduced : 2.54148
+nome    valor   otimo     gap%
+E08-B 2761 2555 7.46106%
+reduced : 2.03496
+nome    valor   otimo     gap%
+E09-B 3755 3541 5.69907%
+reduced : 1.37034
+nome    valor   otimo     gap%
+E10-B 5614 5502 1.99501%
+reduced : 0
+nome    valor   otimo     gap%
+E11-B 72 34 52.7778%
+reduced : 0
+nome    valor   otimo     gap%
+E12-B 115 67 41.7391%
+
+reduced : 1.65403
+nome    valor   otimo     gap%
+E13-B 1427 1269 11.0722%
+reduced : 1.87166
+nome    valor   otimo     gap%
+E14-B 1835 1716 6.48501%
+reduced : 1.82948
+nome    valor   otimo     gap%
+E15-B 2844 2767 2.70745%
+reduced : 0
+nome    valor   otimo     gap%
+E16-B 33 15 54.5455%
+reduced : 0
+nome    valor   otimo     gap%
+E17-B 48 25 47.9167%
+reduced : 4.80349
+nome    valor   otimo     gap%
+E18-B 654 564 13.7615%
+reduced : 2.86738
+nome    valor   otimo     gap%
+E19-B 813 758 6.76507%
+reduced : 0.438917
+nome    valor   otimo     gap%
+E20-B 1361 1342 1.39603%
