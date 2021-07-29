@@ -1,5 +1,5 @@
 /* Author : Gabriel Morete de Azevedo
-   STP reader
+   STP file format reader
 */
 
 #ifndef READER

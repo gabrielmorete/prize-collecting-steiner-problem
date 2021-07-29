@@ -1,11 +1,15 @@
+/* Author : Gabriel Morete de Azevedo
+   Kruskal's algorithm for the minimun spanning tree
+*/
+
 #ifndef MST
 #define MST
 
 #include <tuple>
 #include "frac.h"
-double reduction(frac &opt, vector<int> &v, vector<pair<int, int>> &edges, Graph &G){
+void mst_reduction(frac &opt, vector<int> &v, vector<pair<int, int>> &edges, Graph &G){
 	if (v.size() == 1)
-		return 0;
+		return;
 
 	frac sum = frac(0);
 
@@ -44,11 +48,7 @@ double reduction(frac &opt, vector<int> &v, vector<pair<int, int>> &edges, Graph
 		}
 	}		
 
-	double redu = ((opt - new_opt).val()/opt.val()) * 100;
-	cout<<"reduced : "<<redu<<endl;
-
 	opt = new_opt;
-	return redu;
 }
 
 #endif

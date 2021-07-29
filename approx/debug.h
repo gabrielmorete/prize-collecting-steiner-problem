@@ -9,8 +9,7 @@
 
 #define fr(i,n)     for (int i = 0; i < n; i++)
 #define frr(i,n)    for (int i = 1; i <= n; i++)
-
-const int INF = 0x3f3f3f3f;
+#define INF  0x3f3f3f3f
 
 
 #endif 

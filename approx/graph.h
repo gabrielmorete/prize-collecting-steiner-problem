@@ -1,3 +1,7 @@
+/* Author : Gabriel Morete de Azevedo
+   Basic graph struct
+*/
+
 #ifndef GRAPH
 #define GRAPH
 

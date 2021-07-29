@@ -1,3 +1,8 @@
+/* Author : Gabriel Morete de Azevedo
+   Feofiloff et al implementation of the JMP algorithm
+   Union-Find library
+*/
+
 #ifndef DSU
 #define DSU
 
@@ -6,7 +11,7 @@ using namespace std;
 struct Dsu {
 	vector<int> id, sz;
 
-	Dsu(int n) : id(n + 1), sz(n + 1) { 
+	Dsu(int n) : id(n + 1), sz(n + 1) {
 		for (int itr = 0; itr < n + 1; itr++){
 			id[itr] = itr;
 			sz[itr] = 1;

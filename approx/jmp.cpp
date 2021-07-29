@@ -1,6 +1,7 @@
 /* Author : Gabriel Morete de Azevedo
-   Feofiloff at all implementation of the JMP algorithm
-   Computes a 2-approximation of the PCST
+   Feofiloff et al implementation of the JMP algorithm
+   Computes a 2-approximation of the Prize-collecting
+   steiner tree problem
 */
 
 #include <iostream>
@@ -12,29 +13,32 @@
 #include <tuple>
 #include "frac.h"
 #include "jmp.h"
-#include "debug.h"
 #include "graph.h"
 #include "stp_reader.h"
 #include "dsu.h"
 #include "mst.h"
-#include "preprocessing.cpp"
 #include "tests.h"
 using namespace std;
 
-// const int INF = 0x3f3f3f3f;
+#define dbg(x)  cout << #x << " = " << x << endl
+#define endl '\n'
+#define INF 0x3f3f3f3f
 
 int n, N, mxatv;
-vector<bool> u, l;
-vector<int> o;
-vector<frac> dlt, d;
+vector<bool> u, l; // u[i] = i is maximal? l[i] = i is active?
+vector<frac> dlt, d; // Delta value for set, d value for element
 
-vector<set<int>> L; // Element sets
+// Solution
+frac opt;
+vector<int> vertex;
 vector<pair<int, int>> edges;
+
+vector<vector<int>> L; // Element sets
 
 map<pair<int, int>, frac> cst;
 map<pair<int, int>, pair<int, int>> A;
 
-inline frac residual_cost(int v, int u){ return frac(cst[{u, v}] - d[v] - d[u]); }
+inline frac residual_cost(int v, int u){ return cst[{u, v}] - d[v] - d[u]; }
 
 inline frac key(int i, int j){
 	if (!A.count({i, j})) return frac(INF);
@@ -43,6 +47,9 @@ inline frac key(int i, int j){
 
 struct cmp{ // Heap comparator, sort by heap id
 	bool operator()(pair<int, int> a, pair<int, int> b) const {
+		if (key(a.first, a.second) == key(b.first, b.second)){
+			return a.first < b.first;
+		}
 		return key(a.first, a.second) < key(b.first, b.second);
 	}
 };
@@ -52,12 +59,12 @@ vector<set<pair<int, int>, cmp>> H[2];
 #include "heap.h" // heap auxiliary functions
 
 void init(Graph G){
-	n = G.V;
+	N = mxatv = n = G.V;
 	u.resize(2 * n + 1, 0);
 	l.resize(2 * n + 1, 0);
 	d.resize(2 * n + 1, 0);
-	o.resize(2 * n + 1, 0);
 	dlt.resize(2 * n + 1, 0);
+
 	L.resize(2 * n + 1);
 	H[0].resize(2 * n + 1);
 	H[1].resize(2 * n + 1);
@@ -77,31 +84,33 @@ void init(Graph G){
 
 	for (int v = 1; v <= n; v++){
 		d[v] = 0;
-		L[v].insert(v);
-		o[v] = v;
+		L[v].push_back(v);
 		u[v] = l[v] = 1;
-		dlt[v] = G.p[v];
+		dlt[v] = frac(G.p[v]);
 	}
 	
-	for (int i = 2; i <= n; i++)
-		for (auto v : L[i])
-			for (auto e : G.adj[v]){
-				int u = e.first;
-				int j = o[u];
-				if (key(i, j) > residual_cost(v, u))
-					A[{i, j}] = A[{j, i}] = {u, v};		 
-			}
+	// Optimizing for instances with few terminals	
+	for (int v = 1; v <= n; v++)
+		if (G.p[v] == 0){
+			l[v] = 0;	
+			mxatv--;
+		}
 
-	for (int i = 1; i <= n; i++)
-		for (int j = 1; j < n; j++)
-			if (j != i and A.count({i, j}))
-				insert(1, i, j);
+	for (int v = 1; v <= n; v++)
+		for (auto e : G.adj[v]){
+			int u = e.first;
+			A[{v, u}] = A[{u, v}] = {u, v};		 
+			if (l[u])
+				insert(1, v, e.first);	
+			else	
+				insert(0, v, e.first);	
+		}
 }
 
 void iterate(){
 	frac eps1 = frac(INF);
 	frac eps2 = frac(INF);
-	
+
 	int paux1 = 1, paux2 = 1, qaux2 = 1;
 	for (int p = 1; p <= N; p++)
 		if (u[p] == 1 and l[p] == 1){
@@ -119,7 +128,7 @@ void iterate(){
 			}	
 	
 			if (!H[1][p].empty()){
-				if (eps2 * 2 > get_min_key(1, p)){
+				if ((eps2 * 2) > get_min_key(1, p)){
 					eps2 = get_min_key(1, p);
 					eps2 = eps2 / 2;
 					qaux2 = get_min_ele(1, p);
@@ -129,6 +138,11 @@ void iterate(){
 		}
 
 	frac eps = min(eps1, eps2);	
+
+	if (eps >= frac(INF)){
+		cout << "\033[1;31mRuntime error. Invalid epsilon. Aborting!\033[0m\n";
+		exit(-1);
+	}
 
 	for (int p = 1; p <= N; p++)
 		if (u[p] == 1 and l[p] == 1){
@@ -141,7 +155,6 @@ void iterate(){
 		subcase1b(paux1);
 	else
 		subcase1a(paux2, qaux2);		
-
 }
 
 void subcase1b(int p){
@@ -156,10 +169,20 @@ void subcase1a(int p, int q){
 	edges.push_back(A[{p, q}]);
 	N++;
 
+	L[N].resize(L[p].size() + L[q].size());
+	int a = 0, b = 0, cnt = 0;
+	while (a < L[p].size() and b < L[q].size()){
+		if (L[p][a] <= L[q][b])
+			L[N][cnt++] = L[p][a++];
+		else
+			L[N][cnt++] = L[q][b++];
+	}
 
-	L[N] = L[p];
-	for (auto x : L[q])
-		L[N].insert(x);
+	while (a < L[p].size() and b == L[q].size())
+			L[N][cnt++] = L[p][a++];
+	
+	while (a == L[p].size() and b < L[q].size())
+			L[N][cnt++] = L[q][b++];
 
 	u[p] = u[q] = 0;
 	u[N] = 1;
@@ -188,18 +211,14 @@ void subcase1a(int p, int q){
 				A[{N, i}] = A[{i, N}] = A[{q, i}];
 		}
 
-	for (int h = 0; h <= 1; h++){ // New way
-		vector<int> neigh;
-
+	for (int h = 0; h <= 1; h++){ // New way, O(nlog(n))
 		for (auto it : H[h][p])
 			if (it.first != q)
-				neigh.push_back(it.first);
+				insert(h, N, it.first);
+			
 		for (auto it : H[h][q])
 			if (it.first != p)
-				neigh.push_back(it.first);
-
-		for (int u : neigh) // O(nlog(n))
-			H[h][N].insert({u, N});
+				insert(h, N, it.first);
 	}	
 
 	for (int i = 1; i < N; i++) 
@@ -213,33 +232,11 @@ void subcase1a(int p, int q){
 		}
 }
 
-frac strong_prune(int v, int p, vector<frac> &nw, vector<vector<int>> &adj){
-	for (int u : adj[v]){
-		if (u != p){
-			frac f = strong_prune(u, v, nw, adj);
-			if (cst[{v, u}] < f)
-				nw[v] = nw[v] + nw[u] - cst[{v, u}];
-		}
-	}
-	return nw[v];
-}
-
-frac opt;
-vector<int> vertex;
-void recover_prune(int v, int p, vector<frac> &nw, vector<vector<int>> &adj){
-	vertex.push_back(v);
-	for (int u : adj[v]){
-		if (u != p){
-			if (cst[{v, u}] < nw[u]){
-				edges.push_back({v, u});
-				recover_prune(u, v, nw, adj);
-			}
-		}
-	}
-}
-
 void check(Graph G){
 	Dsu dsu = Dsu(n + 1);
+	
+	if (vertex.size() != edges.size() + 1)
+		cout << "\033[1;31mSolution is NOT a Tree : |V| != |E| - 1\033[0m\n";
 
 	for (auto e : edges)
 		if (!dsu.merge(e.first, e.second))
@@ -249,9 +246,6 @@ void check(Graph G){
 	for (int i = 1; i <= n; i++)
 		if (dsu.id[i] != i)
 			q.insert(dsu.find(i));
-	
-	if (vertex.size() != edges.size() + 1)
-		cout << "\033[1;31mSolution is NOT a Tree : |V| != |E| - 1\033[0m\n";
 
 	if (q.size() > 1)
 		cout << "\033[1;31mSolution is NOT a Tree : Disconnected\033[0m\n";
@@ -270,9 +264,30 @@ void check(Graph G){
 		val = val + cst[e];
 
 	if (val != opt)
-		cout << "\033[1;31mIncosistent optimal value\033[0m\n";
+		cout << "\033[1;31mInconsistent optimal value\033[0m\n";
 }
 
+frac strong_prune(int v, int p, vector<frac> &nw, vector<long long> &pi, vector<vector<int>> &adj){
+	nw[v] = frac(pi[v]);
+	for (int u : adj[v]){
+		if (u != p){
+			frac f = strong_prune(u, v, nw, pi, adj);
+			if (cst[{v, u}] < f)
+				nw[v] = nw[v] + nw[u] - cst[{v, u}];
+		}
+	}
+	return nw[v];
+}
+
+void recover_prune(int v, int p, vector<frac> &nw, vector<vector<int>> &adj){
+	vertex.push_back(v);
+	for (int u : adj[v]){
+		if (u != p and cst[{v, u}] < nw[u]){
+			edges.push_back({v, u});
+			recover_prune(u, v, nw, adj);
+		}
+	}
+}
 
 void prune(Graph G){
 	vector< vector<int> > adj(n + 1);
@@ -283,48 +298,31 @@ void prune(Graph G){
 	}
 
 	vector<frac> nw(n + 1);
-	frac sum = frac(0, 1);
-	for (int i = 1; i <= n; i++){
-		nw[i] = G.p[i];
+	frac sum = frac(0);
+	for (int i = 1; i <= n; i++)
 		sum = sum + G.p[i];
+
+	opt = frac(INF);
+	int id = 1;
+
+	for (int v = 1; v <= n; v++){
+		frac aux = sum - strong_prune(v, v, nw, G.p, adj);
+		if (aux < opt){
+			opt = aux;
+			id = v;
+		}
 	}
 
-	bool done = 0;
-	for (int i = 1; i <= N; i++)
-		if (l[i] == 1 and u[i] == 1){ // Should happen only once
-			if (done)
-				cout << "\033[1;31mMultiple active components!\033[0m\n";
-
-			int u = *L[i].begin();
-			opt = sum - strong_prune(u, u, nw, adj);
-			vertex.clear();
-			edges.clear();
-			recover_prune(u, u, nw, adj);
-			done = 1;
-		}
-
-	// Try a single vertex solution
-	for (int v = 1; v <= n; v++){
-		frac f = sum - G.p[v];
-		if (opt > (sum - G.p[v])){
-			opt = sum - G.p[v];
-			vertex.clear();
-			edges.clear();
-			vertex.push_back(v);
-		}
-	}	
+	opt = sum - strong_prune(id, id, nw, G.p, adj);
+	vertex.clear();
+	edges.clear();
+	recover_prune(id, id, nw, adj);
 }
 
 
 frac pcst(Graph G){
-	// if (preprocessing(G) == -1)
-	// 	cout << "\033[1;31mErro no preprocessamento\033[0m\n";
-
 	init(G);
 
-
-
-	N = mxatv = n;
 	while (mxatv > 1)
 		iterate();
 
@@ -332,24 +330,14 @@ frac pcst(Graph G){
 
 	check(G);
 
-	// reduction(opt, vertex, edges, G);
+	mst_reduction(opt, vertex, edges, G);
 
-	// check(G);
+	check(G);
 
 	return opt;
 }
 
 int main(){
-	Graph G;
-	// string fname = "../instances/PCSPG-JMP/P400.4.stp";
-	// string fname = "../instances/PCSPG-JMP/K100.stp";
-	// string fname = "../instances/ce.stp";
-
-	// cout<<"Reader : "<<STP_reader(fname, G)<<endl;
-	// STP_reader(fname, G);
-	// cout<<"OPT = "<<pcst(G)<<endl;
 	read_sol();
 	runall();
-	// // rune();
-
 }

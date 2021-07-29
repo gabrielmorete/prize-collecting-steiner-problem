@@ -1,3 +1,7 @@
+/* Author : Gabriel Morete de Azevedo
+   Headers of jmp.cpp
+*/
+
 #ifndef JMP
 #define JMP
 

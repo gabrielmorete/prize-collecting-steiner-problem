@@ -1,4 +1,6 @@
-// Simple library for rational numbers
+/* Author : Gabriel Morete de Azevedo
+   Simple library for rational numbers
+*/
 
 #ifndef FRAC
 #define FRAC
@@ -58,12 +60,12 @@ struct frac{
 	inline void operator=(frac p){ a = p.a; b = p.b;}
 	inline bool operator==(frac &p){ return (a == p.a) and (b == p.b); }
 	inline bool operator==(frac p){ return (a == p.a) and (b == p.b); }
-	inline bool operator!=(frac &p){ return (a != p.a) or (b != p.b); }
+	inline bool operator!=(frac p){ return (a != p.a) or (b != p.b); }
 	// inline bool operator!=(frac p){ return (a != p.a) or (b != p.b); }
-	inline bool operator<(const frac &p) const { return a * p.b < p.a * b; }
-	inline bool operator>(const frac &p) const { return a * p.b > p.a * b; }
-	inline bool operator<=(const frac &p) const { return a * p.b <= p.a * b; }
-	inline bool operator>=(const frac &p) const { return a * p.b >= p.a * b; }
+	inline bool operator<(const frac p) const { return a * p.b < p.a * b; }
+	inline bool operator>(const frac p) const { return a * p.b > p.a * b; }
+	inline bool operator<=(const frac p) const { return a * p.b <= p.a * b; }
+	inline bool operator>=(const frac p) const { return a * p.b >= p.a * b; }
 
 	double val(){ return ((double) a) / ((double) b);}
 
